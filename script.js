@@ -89,7 +89,7 @@ function showPage(id) {
     if (id === 'spin') { renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
 }
 
-// --- Review Logic ---
+// --- Review Logic (Updated with Auto-Tier) ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
     const loc = document.getElementById('inp-loc').value.trim();
@@ -110,49 +110,38 @@ async function submitReview() {
         });
     }
 
-    reviews.push({ id: Date.now(), name, loc, cuisine, author, rating, text, img: imgBase64, date: new Date().toISOString() });
+    const newReview = { id: Date.now(), name, loc, cuisine, author, rating, text, img: imgBase64, date: new Date().toISOString() };
+    reviews.push(newReview);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
     
-    showToast('Review posted!');
+    // AUTO-MAPPING TO TIER LIST
+    autoMapToTier(newReview);
+    
+    showToast('Review posted & ranked!');
     showPage('reviews');
 }
 
-function renderReviews() {
-    const grid = document.getElementById('restGrid');
-    grid.innerHTML = [...reviews].sort((a, b) => new Date(b.date) - new Date(a.date)).map(r => `
-        <div class="rest-card">
-            <div class="tag">${r.cuisine}</div>
-            <h3>${r.name}</h3>
-            <div class="location">📍 ${r.loc}</div>
-            <div class="rating-val" style="color:${getTierColor(r.rating)}">
-                ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
-            </div>
-            <div class="snippet">${r.text}</div>
-            ${r.img ? `<img src="${r.img}" class="review-img">` : ''}
-        </div>`).join('');
-}
-
-// --- Tier List Logic ---
-function populateTierSelect() {
-    const sel = document.getElementById('tier-select-rest');
-    sel.innerHTML = '<option value="">— pick a restaurant —</option>';
-    reviews.forEach(r => sel.innerHTML += `<option value="${r.id}">${r.name}</option>`);
-}
-
-function addToTier() {
-    const restId = parseInt(document.getElementById('tier-select-rest').value);
-    const tier = document.getElementById('tier-select-tier').value;
-    if (!restId) return showToast('Pick a restaurant first!');
-
-    const rest = reviews.find(r => r.id === restId);
-    ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => { tierData[t] = tierData[t].filter(x => x.id !== restId); });
-    tierData[tier].push({ id: restId, name: rest.name });
+function autoMapToTier(review) {
+    let tier = 'F';
+    const v = review.rating;
     
+    if (v >= 9.0) tier = 'S';
+    else if (v >= 8.0) tier = 'A';
+    else if (v >= 7.0) tier = 'B';
+    else if (v >= 6.0) tier = 'C';
+    else if (v >= 4.5) tier = 'D';
+
+    // Remove if restaurant already exists in any tier (to update it)
+    ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
+        tierData[t] = tierData[t].filter(x => x.name !== review.name);
+    });
+
+    tierData[tier].push({ id: review.id, name: review.name });
     localStorage.setItem(TIER_KEY, JSON.stringify(tierData));
     renderTierBoard();
-    showToast(`${rest.name} ranked!`);
 }
 
+// --- Tier List Logic (Cleaned up) ---
 function renderTierBoard() {
     ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
         const el = document.getElementById('tier-' + t);
