@@ -24,49 +24,55 @@ let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
     {label:'Western', color:'#6c8ac8'}, {label:'Italian', color:'#c85a5a'}
 ];
 
-// --- Slider & Color Logic ---
+// --- Slider & 3-Point Color Logic (Updated) ---
 const slider = document.getElementById('ratingSlider');
 const display = document.getElementById('ratingValueDisplay');
 
 /**
- * Calculates a color between Red (0) and Green (10)
- * 0.0 = Red (200, 74, 74)
- * 5.0 = Yellow/Orange
- * 10.0 = Green (74, 157, 156) 
+ * Calculates color: Red (0.0) -> Yellow-Orange (5.0) -> Green (10.0)
  */
 function getDynamicColor(value) {
     const v = parseFloat(value);
-    
-    // RGB for Red (0.0)
-    const redStart = { r: 200, g: 74, b: 74 }; 
-    // RGB for Green (10.0) - Using your Teal/Green theme color
-    const greenEnd = { r: 74, g: 157, b: 156 };
+    let r, g, b;
 
-    // Calculate ratio (0 to 1)
-    const ratio = v / 10;
+    if (v <= 5) {
+        // Transition from Red (230, 50, 50) to Yellow-Orange (255, 180, 50)
+        const ratio = v / 5;
+        r = 230 + (255 - 230) * ratio;
+        g = 50 + (180 - 50) * ratio;
+        b = 50 + (50 - 50) * ratio;
+    } else {
+        // Transition from Yellow-Orange (255, 180, 50) to Green (74, 157, 156)
+        const ratio = (v - 5) / 5;
+        r = 255 + (74 - 255) * ratio;
+        g = 180 + (157 - 180) * ratio;
+        b = 50 + (156 - 50) * ratio;
+    }
 
-    // Interpolate between the two colors
-    const r = Math.round(redStart.r + (greenEnd.r - redStart.r) * ratio);
-    const g = Math.round(redStart.g + (greenEnd.g - redStart.g) * ratio);
-    const b = Math.round(redStart.b + (greenEnd.b - redStart.b) * ratio);
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+}
 
-    return `rgb(${r}, ${g}, ${b})`;
+// Function to keep standard tier colors for existing reviews
+function getTierColor(v) {
+    if (v >= 9.0) return '#c87941';
+    if (v >= 8.0) return '#4a9d9c';
+    if (v >= 7.0) return '#4a7a9d';
+    if (v >= 6.0) return '#6a6a6a';
+    if (v >= 4.5) return '#3a3a3a';
+    return '#c84a4a';
 }
 
 if (slider) {
-    // Set initial color on load
-    const initialColor = getDynamicColor(slider.value);
-    display.style.color = initialColor;
-    slider.style.accentColor = initialColor;
-
-    slider.addEventListener('input', (e) => {
-        const v = parseFloat(e.target.value).toFixed(1);
+    const updateSlider = () => {
+        const v = parseFloat(slider.value).toFixed(1);
         const newColor = getDynamicColor(v);
-
         display.textContent = v;
         display.style.color = newColor;
         slider.style.accentColor = newColor;
-    });
+    };
+
+    slider.addEventListener('input', updateSlider);
+    updateSlider(); // Initial state
 }
 
 // --- Navigation ---
@@ -75,7 +81,6 @@ function showPage(id) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     
-    // Add active class to nav buttons
     const navMap = { 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
     if (id in navMap) document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
 
@@ -179,10 +184,8 @@ function drawWheel(ctx, angle) {
         ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Monaco,monospace';
         ctx.fillText(c.label, r - 10, 4); ctx.restore();
     });
-    // Center pin
     ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = '#1e1e1e'; ctx.fill();
     ctx.strokeStyle = '#c87941'; ctx.lineWidth = 2; ctx.stroke();
-    // Indicator
     ctx.beginPath(); ctx.moveTo(cx, cy - r - 5); ctx.lineTo(cx - 10, cy - r + 14); ctx.lineTo(cx + 10, cy - r + 14);
     ctx.closePath(); ctx.fillStyle = '#e8e4dc'; ctx.fill();
 }
