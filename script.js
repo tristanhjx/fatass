@@ -28,40 +28,44 @@ let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
 const slider = document.getElementById('ratingSlider');
 const display = document.getElementById('ratingValueDisplay');
 
-function getTierColor(v) {
-    if (v >= 9.0) return '#c87941';
-    if (v >= 8.0) return '#4a9d9c';
-    if (v >= 7.0) return '#4a7a9d';
-    if (v >= 6.0) return '#6a6a6a';
-    if (v >= 4.5) return '#3a3a3a';
-    return '#c84a4a';
-}
+/**
+ * Calculates a color between Red (0) and Green (10)
+ * 0.0 = Red (200, 74, 74)
+ * 5.0 = Yellow/Orange
+ * 10.0 = Green (74, 157, 156) 
+ */
+function getDynamicColor(value) {
+    const v = parseFloat(value);
+    
+    // RGB for Red (0.0)
+    const redStart = { r: 200, g: 74, b: 74 }; 
+    // RGB for Green (10.0) - Using your Teal/Green theme color
+    const greenEnd = { r: 74, g: 157, b: 156 };
 
-function getRGB(hex) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return { r, g, b };
-}
+    // Calculate ratio (0 to 1)
+    const ratio = v / 10;
 
-function getInvertedColor(hex) {
-    const { r, g, b } = getRGB(hex);
-    const invR = (255 - r).toString(16).padStart(2, '0');
-    const invG = (255 - g).toString(16).padStart(2, '0');
-    const invB = (255 - b).toString(16).padStart(2, '0');
-    return `#${invR}${invG}${invB}`;
+    // Interpolate between the two colors
+    const r = Math.round(redStart.r + (greenEnd.r - redStart.r) * ratio);
+    const g = Math.round(redStart.g + (greenEnd.g - redStart.g) * ratio);
+    const b = Math.round(redStart.b + (greenEnd.b - redStart.b) * ratio);
+
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
 if (slider) {
+    // Set initial color on load
+    const initialColor = getDynamicColor(slider.value);
+    display.style.color = initialColor;
+    slider.style.accentColor = initialColor;
+
     slider.addEventListener('input', (e) => {
         const v = parseFloat(e.target.value).toFixed(1);
-        const currentColor = getTierColor(v);
-        const invertedColor = getInvertedColor(currentColor);
+        const newColor = getDynamicColor(v);
 
         display.textContent = v;
-        display.style.color = currentColor;
-        display.style.backgroundColor = invertedColor;
-        slider.style.accentColor = currentColor;
+        display.style.color = newColor;
+        slider.style.accentColor = newColor;
     });
 }
 
