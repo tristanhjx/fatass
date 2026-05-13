@@ -7,8 +7,6 @@ const HISTORY_KEY = 'fatass_history_v3';
 const TIER_KEY = 'fatass_tiers_v1';
 
 let reviews = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-let cuisineList = JSON.parse(localStorage.getItem(CUISINE_LIST_KEY)) || ["Hawker / Local", "Japanese", "Italian", "Thai", "Western", "Chinese", "Korean", "Indian"];
-let authorList = JSON.parse(localStorage.getItem(AUTHOR_LIST_KEY)) || [];
 let spinHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
 let tierData = JSON.parse(localStorage.getItem(TIER_KEY)) || {S:[], A:[], B:[], C:[], D:[], F:[]};
 
@@ -24,35 +22,27 @@ let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
     {label:'Western', color:'#6c8ac8'}, {label:'Italian', color:'#c85a5a'}
 ];
 
-// --- Slider & 3-Point Color Logic (Updated) ---
+// --- Slider & 3-Point Color Logic ---
 const slider = document.getElementById('ratingSlider');
 const display = document.getElementById('ratingValueDisplay');
 
-/**
- * Calculates color: Red (0.0) -> Yellow-Orange (5.0) -> Green (10.0)
- */
 function getDynamicColor(value) {
     const v = parseFloat(value);
     let r, g, b;
-
     if (v <= 5) {
-        // Transition from Red (230, 50, 50) to Yellow-Orange (255, 180, 50)
         const ratio = v / 5;
         r = 230 + (255 - 230) * ratio;
         g = 50 + (180 - 50) * ratio;
         b = 50 + (50 - 50) * ratio;
     } else {
-        // Transition from Yellow-Orange (255, 180, 50) to Green (74, 157, 156)
         const ratio = (v - 5) / 5;
         r = 255 + (74 - 255) * ratio;
         g = 180 + (157 - 180) * ratio;
         b = 50 + (156 - 50) * ratio;
     }
-
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
-// Function to keep standard tier colors for existing reviews
 function getTierColor(v) {
     if (v >= 9.0) return '#c87941';
     if (v >= 8.0) return '#4a9d9c';
@@ -70,9 +60,8 @@ if (slider) {
         display.style.color = newColor;
         slider.style.accentColor = newColor;
     };
-
     slider.addEventListener('input', updateSlider);
-    updateSlider(); // Initial state
+    updateSlider();
 }
 
 // --- Navigation ---
@@ -85,15 +74,15 @@ function showPage(id) {
     if (id in navMap) document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
 
     if (id === 'reviews') renderReviews();
-    if (id === 'tier') { renderTierBoard(); populateTierSelect(); }
+    if (id === 'tier') renderTierBoard();
     if (id === 'spin') { renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
 }
 
-// --- Review Logic (Updated with Auto-Tier) ---
+// --- Review Logic (Fixed Persistence) ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
     const loc = document.getElementById('inp-loc').value.trim();
-    const cuisine = document.getElementById('inp-cuisine').value;
+    const cuisine = document.getElementById('inp-cuisine').value.trim();
     const author = document.getElementById('inp-author').value.trim();
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
@@ -110,28 +99,73 @@ async function submitReview() {
         });
     }
 
-    const newReview = { id: Date.now(), name, loc, cuisine, author, rating, text, img: imgBase64, date: new Date().toISOString() };
+    const newReview = { 
+        id: Date.now(), 
+        name, 
+        loc, 
+        cuisine, 
+        author, 
+        rating, 
+        text, 
+        img: imgBase64, 
+        date: new Date().toISOString() 
+    };
+
+    // 1. Save to global array and LocalStorage
     reviews.push(newReview);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
     
-    // AUTO-MAPPING TO TIER LIST
+    // 2. Map to Tier List
     autoMapToTier(newReview);
     
+    // 3. Clear the form
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-loc').value = '';
+    document.getElementById('inp-cuisine').value = '';
+    document.getElementById('inp-review').value = '';
+    document.getElementById('inp-img').value = '';
+    
+    // 4. Refresh Views and Switch Page
+    renderReviews(); 
     showToast('Review posted & ranked!');
     showPage('reviews');
 }
 
+function renderReviews() {
+    const grid = document.getElementById('restGrid');
+    if (!grid) return;
+    
+    // Refresh reviews from storage in case of updates
+    reviews = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    if (reviews.length === 0) {
+        grid.innerHTML = '<p class="history-empty">No reviews yet. Be the first to drop a take.</p>';
+        return;
+    }
+
+    grid.innerHTML = [...reviews].sort((a, b) => new Date(b.date) - new Date(a.date)).map(r => `
+        <div class="rest-card">
+            <div class="tag">${r.cuisine}</div>
+            <h3>${r.name}</h3>
+            <div class="location">📍 ${r.loc}</div>
+            <div class="rating-val" style="color:${getTierColor(r.rating)}">
+                ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
+            </div>
+            <div class="snippet">${r.text}</div>
+            ${r.img ? `<img src="${r.img}" class="review-img">` : ''}
+        </div>`).join('');
+}
+
+// --- Tier List Logic ---
 function autoMapToTier(review) {
     let tier = 'F';
     const v = review.rating;
-    
     if (v >= 9.0) tier = 'S';
     else if (v >= 8.0) tier = 'A';
     else if (v >= 7.0) tier = 'B';
     else if (v >= 6.0) tier = 'C';
     else if (v >= 4.5) tier = 'D';
 
-    // Remove if restaurant already exists in any tier (to update it)
     ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
         tierData[t] = tierData[t].filter(x => x.name !== review.name);
     });
@@ -141,10 +175,10 @@ function autoMapToTier(review) {
     renderTierBoard();
 }
 
-// --- Tier List Logic (Cleaned up) ---
 function renderTierBoard() {
     ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
         const el = document.getElementById('tier-' + t);
+        if (!el) return;
         if (!tierData[t] || !tierData[t].length) {
             el.innerHTML = '<span class="history-empty">empty</span>';
             return;
@@ -216,7 +250,8 @@ function showSpinResult(c, idx) {
 
 // --- History & Cuisine Management ---
 function renderHistory() {
-    document.getElementById('historyList').innerHTML = spinHistory.map(h => `
+    const el = document.getElementById('historyList');
+    if(el) el.innerHTML = spinHistory.map(h => `
         <div class="history-item"><span style="color:${h.color}">${h.label}</span><span class="history-time">${h.time}</span></div>
     `).join('') || '<span class="history-empty">no spins</span>';
 }
@@ -230,12 +265,14 @@ function toggleEdit() {
 }
 
 function renderCuisineView() {
-    document.getElementById('cuisineViewList').innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px;">` +
+    const el = document.getElementById('cuisineViewList');
+    if(el) el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px;">` +
         wheelCuisines.map(c => `<span style="border:1px solid ${c.color};color:${c.color};font-size:10px;padding:2px 5px;">${c.label}</span>`).join('') + `</div>`;
 }
 
 function renderCuisineEditList() {
-    document.getElementById('cuisineEditList').innerHTML = wheelCuisines.map((c, i) => `
+    const el = document.getElementById('cuisineEditList');
+    if(el) el.innerHTML = wheelCuisines.map((c, i) => `
         <div class="cuisine-edit-item"><div class="cuisine-color-dot" style="background:${c.color}"></div><span>${c.label}</span><button onclick="removeCuisine(${i})">✕</button></div>
     `).join('');
 }
@@ -272,6 +309,7 @@ function closeModal() { document.getElementById('removeModal').classList.remove(
 
 function showToast(m) {
     const t = document.getElementById('toast');
+    if(!t) return;
     t.textContent = m; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2000);
 }
