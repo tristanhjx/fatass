@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FATASS</title>
+<link href="https://fonts.googleapis.com/css2?family=Monaco&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#1e1e1e;--bg2:#252525;--bg3:#2c2c2c;--card:#2a2a2a;--border:#3a3a3a;
+  --orange:#c87941;--orange-dim:#a0602e;--teal:#4a9d9c;--teal-dim:#357a79;
+  --text:#e8e4dc;--muted:#888;--font:'Monaco',monospace;
+  /* Tier Colors */
+  --color-s: #c87941; --color-a: #4a9d9c; --color-b: #4a7a9d; 
+  --color-c: #6a6a6a; --color-d: #3a3a3a; --color-f: #c84a4a;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh;}
+nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;}
+.logo-sm{font-size:16px;letter-spacing:1px;text-transform:uppercase;color:var(--orange);cursor:pointer;}
+.logo-sm .a{color:var(--teal);}
+.nav-links{display:flex;}
+.nav-btn{background:none;border:none;color:var(--muted);font-family:var(--font);font-size:11px;padding:0 .9rem;height:52px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:1px;text-transform:uppercase;}
+.nav-btn:hover{color:var(--text);}
+.nav-btn.active{color:var(--orange);border-bottom-color:var(--orange);}
+.page{display:none;padding:2rem;max-width:1100px;margin:0 auto;}
+.page.active{display:block;}
+#page-home{display:none;max-width:900px;margin:0 auto;padding:0;}
+#page-home.active{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 52px);}
+.home-logo{text-align:center;margin-bottom:3rem;}
+.home-logo h1{font-size:64px;letter-spacing:3px;text-transform:uppercase;color:var(--orange);line-height:1;}
+.home-logo h1 .a{color:var(--teal);}
+.home-logo p{color:var(--muted);letter-spacing:2px;font-size:11px;margin-top:.75rem;}
+.home-btns{display:flex;flex-direction:column;gap:.75rem;width:260px;}
+.home-nav-btn{background:none;border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:1rem;cursor:pointer;transition:all .2s;text-align:left;}
+.home-nav-btn:hover{border-color:var(--orange);color:var(--orange);}
+.home-nav-btn .arrow{float:right;color:var(--muted);}
+.home-nav-btn:hover .arrow{color:var(--orange);}
+.section-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.75rem;}
+.page-hero{text-align:center;padding:2rem 0 1.5rem;}
+.page-hero h2{font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--orange);margin-bottom:.4rem;}
+.page-hero p{color:var(--muted);letter-spacing:2px;font-size:11px;}
+.rest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:2.5rem;}
+.rest-card{background:var(--card);border:1px solid var(--border);padding:1.25rem;transition:border-color .2s,transform .15s;display:flex;flex-direction:column;}
+.rest-card:hover{border-color:var(--orange);transform:translateY(-2px);}
+.rest-card .tag{display:inline-block;background:var(--bg3);color:var(--teal);font-size:10px;letter-spacing:2px;padding:3px 8px;text-transform:uppercase;margin-bottom:.75rem;align-self: flex-start;}
+.rest-card h3{font-size:15px;color:var(--text);margin-bottom:.4rem;letter-spacing:1px;}
+.rest-card .location{color:var(--muted);font-size:11px;margin-bottom:.75rem;}
+.rating-val{color:var(--orange);font-weight:bold;font-size:14px;margin-bottom:.5rem;}
+.review-count{color:var(--muted);font-size:10px;margin-left:6px;vertical-align:1px;}
+.snippet{color:var(--muted);font-size:11px;line-height:1.6;border-top:1px solid var(--border);padding-top:.75rem;margin-top:.75rem;}
+.review-img{width:100%;height:180px;object-fit:cover;margin-top:1rem;border:1px solid var(--border);}
+
+.form-card{background:var(--card);border:1px solid var(--border);padding:2rem;margin-top:1rem;}
+.form-row{margin-bottom:1.25rem;}
+.form-row label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
+.form-row input,.form-row select,.form-row textarea{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:13px;padding:.6rem .8rem;outline:none;transition:border-color .2s;}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--teal);}
+.form-row textarea{resize:vertical;min-height:80px;}
+
+/* Custom Range Slider */
+.slider-container{display:flex;align-items:center;gap:15px;}
+#ratingSlider{flex:1;cursor:pointer;accent-color:var(--orange);}
+#ratingValueDisplay{font-size:18px;font-weight:bold;min-width:45px;text-align:right;}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+
+/* SPIN LAYOUT */
+.spin-layout{display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;}
+@media(max-width:700px){.spin-layout{grid-template-columns:1fr;}}
+.wheel-wrap{display:flex;flex-direction:column;align-items:center;padding:.5rem 0;}
+#wheelCanvas{border:2px solid var(--border);display:block;max-width:100%;}
+.wheel-result{margin-top:1.25rem;text-align:center;min-height:56px;}
+.wheel-result .cuisine-name{font-size:26px;letter-spacing:3px;text-transform:uppercase;}
+.wheel-result .cuisine-sub{color:var(--muted);font-size:11px;letter-spacing:2px;margin-top:.25rem;}
+.spin-btn{margin-top:1.25rem;}
+.result-actions{display:flex;gap:.5rem;margin-top:.75rem;justify-content:center;}
+
+.spin-sidebar{display:flex;flex-direction:column;gap:1rem;}
+.sidebar-box{background:var(--card);border:1px solid var(--border);padding:1rem;}
+.sidebar-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center;}
+.sidebar-title button{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:10px;letter-spacing:1px;padding:2px 8px;cursor:pointer;text-transform:uppercase;transition:all .2s;}
+.sidebar-title button:hover{border-color:var(--teal);color:var(--teal);}
+.history-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.history-list::-webkit-scrollbar{width:3px;}
+.history-list::-webkit-scrollbar-track{background:var(--bg3);}
+.history-list::-webkit-scrollbar-thumb{background:var(--border);}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--bg3);border-left:2px solid var(--border);}
+.history-item.latest{border-left-color:var(--orange);}
+.history-name{font-size:12px;letter-spacing:1px;}
+.history-time{font-size:10px;color:var(--muted);}
+.history-empty{color:var(--muted);font-size:11px;letter-spacing:1px;}
+
+.cuisine-edit-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:.75rem;}
+.cuisine-edit-item{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg3);}
+.cuisine-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cuisine-edit-item span{flex:1;font-size:11px;letter-spacing:1px;}
+.cuisine-edit-item button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;}
+
+.tier-row{display:flex;min-height:70px;border:1px solid var(--border);margin-bottom:4px;}
+.tier-label{width:70px;min-width:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:bold;letter-spacing:1px;border-right:1px solid var(--border);line-height:1.1;}
+.tier-range{font-size:9px;font-weight:normal;letter-spacing:0;opacity:0.8;margin-top:3px;}
+.tier-s .tier-label{background:var(--color-s);color:#fff;}
+.tier-a .tier-label{background:var(--color-a);color:#fff;}
+.tier-b .tier-label{background:var(--color-b);color:#fff;}
+.tier-c .tier-label{background:var(--color-c);color:#fff;}
+.tier-d .tier-label{background:var(--color-d);color:var(--muted);}
+.tier-f .tier-label{background:#1e1010;color:var(--color-f);}
+.tier-items{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;flex:1;background:var(--card);}
+.tier-chip{background:var(--bg3);border:1px solid var(--border);padding:6px 12px;font-size:11px;letter-spacing:1px;display:flex;align-items:center;gap:8px;}
+.chip-remove{color:var(--muted);cursor:pointer;font-size:14px;line-height:1;}
+.chip-remove:hover{color:#e05555;}
+
+.btn{background:var(--orange);color:#fff;border:none;font-family:var(--font);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:.7rem 2rem;cursor:pointer;transition:background .2s;}
+.btn:hover{background:var(--orange-dim);}
+.btn-teal{background:var(--teal);}
+.btn-teal:hover{background:var(--teal-dim);}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--teal);color:#fff;font-family:var(--font);font-size:12px;letter-spacing:1px;padding:.75rem 1.5rem;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* File upload styling */
+input[type="file"]::file-selector-button {
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+  padding: 5px 10px; font-family: var(--font); cursor: pointer; text-transform: uppercase; font-size: 10px;
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo-sm" onclick="showPage('home')">F<span class="a">A</span>T<span class="a">A</span>SS</div>
+  <div class="nav-links">
+    <button class="nav-btn" onclick="showPage('reviews')">Reviews</button>
+    <button class="nav-btn" onclick="showPage('spin')">Spin</button>
+    <button class="nav-btn" onclick="showPage('tier')">Tier List</button>
+    <button class="nav-btn" onclick="showPage('add')">+ Add</button>
+  </div>
+</nav>
+
+<div id="page-home" class="page active">
+  <div class="home-logo">
+    <h1>F<span class="a">A</span>T<span class="a">A</span>SS</h1>
+    <p>// your crew's food diary //</p>
+  </div>
+  <div class="home-btns">
+    <button class="home-nav-btn" onclick="showPage('reviews')">Reviews <span class="arrow">→</span></button>
+    <button class="home-nav-btn" onclick="showPage('spin')">Spin the Wheel <span class="arrow">→</span></button>
+    <button class="home-nav-btn" onclick="showPage('tier')">Tier List <span class="arrow">→</span></button>
+    <button class="home-nav-btn" onclick="showPage('add')">+ Add Review <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<div id="page-reviews" class="page">
+  <div class="page-hero"><h2>Reviews</h2><p>// what the crew has been eating //</p></div>
+  <div class="section-title">// all reviews</div>
+  <div class="rest-grid" id="restGrid"></div>
+</div>
+
+<div id="page-spin" class="page">
+  <div class="page-hero"><h2>Spin the Wheel</h2><p>// can't decide? let fate cook //</p></div>
+  <div class="spin-layout">
+    <div class="wheel-wrap">
+      <canvas id="wheelCanvas" width="340" height="340"></canvas>
+      <div class="wheel-result" id="wheelResult"><div class="cuisine-sub">hit spin to find out what you're eating</div></div>
+      <div class="result-actions" id="resultActions"></div>
+      <button class="btn spin-btn btn-teal" id="spinBtn" onclick="spinWheel()">SPIN</button>
+    </div>
+    <div class="spin-sidebar">
+      <div class="sidebar-box">
+        <div class="sidebar-title">// spin history <button onclick="clearHistory()">clear</button></div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-tier" class="page">
+  <div class="page-hero"><h2>Tier List</h2><p>// rank the spots, no cap //</p></div>
+  <div id="tierBoard">
+    <div class="tier-row tier-s"><div class="tier-label">S<span class="tier-range">9+</span></div><div class="tier-items" id="tier-S"></div></div>
+    <div class="tier-row tier-a"><div class="tier-label">A<span class="tier-range">8.0–8.9</span></div><div class="tier-items" id="tier-A"></div></div>
+    <div class="tier-row tier-b"><div class="tier-label">B<span class="tier-range">7.0–7.9</span></div><div class="tier-items" id="tier-B"></div></div>
+    <div class="tier-row tier-c"><div class="tier-label">C<span class="tier-range">6.0–6.9</span></div><div class="tier-items" id="tier-C"></div></div>
+    <div class="tier-row tier-d"><div class="tier-label">D<span class="tier-range">4.5–5.9</span></div><div class="tier-items" id="tier-D"></div></div>
+    <div class="tier-row tier-f"><div class="tier-label">F<span class="tier-range">0–4.4</span></div><div class="tier-items" id="tier-F"></div></div>
+  </div>
+</div>
+
+<div id="page-add" class="page">
+  <div class="page-hero"><h2>Add Review</h2><p>// drop your hot take //</p></div>
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
+      <div class="form-row"><label>Location</label><input type="text" id="inp-loc" placeholder="e.g. Toa Payoh"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Cuisine type (Type or Pick)</label>
+        <input list="list-cuisines" id="inp-cuisine" placeholder="e.g. Japanese">
+        <datalist id="list-cuisines"></datalist>
+      </div>
+      <div class="form-row">
+        <label>Your name</label>
+        <input list="list-authors" id="inp-author" placeholder="Who are you?">
+        <datalist id="list-authors"></datalist>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Rating (0.0 to 10.0)</label>
+      <div class="slider-container">
+        <input type="range" id="ratingSlider" min="0" max="10" step="0.1" value="7.0">
+        <span id="ratingValueDisplay">7.0</span>
+      </div>
+    </div>
+    <div class="form-row"><label>Review</label><textarea id="inp-review" placeholder="What did you eat?"></textarea></div>
+    <div class="form-row"><label>Photo</label><input type="file" id="inp-img" accept="image/*"></div>
+    <button class="btn" onclick="submitReview()">Post Review</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY='fatass_reviews_v2';
+const CUISINE_LIST_KEY='fatass_cuisines_v2';
+const AUTHOR_LIST_KEY='fatass_authors_v2';
+const SPIN_HIST_KEY='fatass_history_v2';
+
+let reviews = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+let cuisineList = JSON.parse(localStorage.getItem(CUISINE_LIST_KEY)) || ["Hawker / Local", "Japanese", "Italian", "Thai", "Western"];
+let authorList = JSON.parse(localStorage.getItem(AUTHOR_LIST_KEY)) || [];
+let spinHistory = JSON.parse(localStorage.getItem(SPIN_HIST_KEY)) || [];
+let currentAngle = 0;
+
+// Update Slider Colors
+const slider = document.getElementById('ratingSlider');
+const display = document.getElementById('ratingValueDisplay');
+
+function getTierColor(val) {
+  if (val >= 9.0) return '#c87941'; // S
+  if (val >= 8.0) return '#4a9d9c'; // A
+  if (val >= 7.0) return '#4a7a9d'; // B
+  if (val >= 6.0) return '#6a6a6a'; // C
+  if (val >= 4.5) return '#3a3a3a'; // D
+  return '#c84a4a'; // F
+}
+
+slider.addEventListener('input', (e) => {
+  const val = parseFloat(e.target.value).toFixed(1);
+  display.textContent = val;
+  display.style.color = getTierColor(val);
+  slider.style.accentColor = getTierColor(val);
+});
+
+function saveAll() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+  localStorage.setItem(CUISINE_LIST_KEY, JSON.stringify(cuisineList.sort()));
+  localStorage.setItem(AUTHOR_LIST_KEY, JSON.stringify(authorList.sort()));
+  updateDatalists();
+}
+
+function updateDatalists() {
+  document.getElementById('list-cuisines').innerHTML = cuisineList.sort().map(c => `<option value="${c}">`).join('');
+  document.getElementById('list-authors').innerHTML = authorList.sort().map(a => `<option value="${a}">`).join('');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if(id === 'reviews') renderReviews();
+  if(id === 'tier') renderTierBoard();
+  if(id === 'spin') renderWheel();
+}
+
+async function submitReview() {
+  const name = document.getElementById('inp-name').value;
+  const loc = document.getElementById('inp-loc').value;
+  const cuisine = document.getElementById('inp-cuisine').value;
+  const author = document.getElementById('inp-author').value;
+  const rating = parseFloat(slider.value);
+  const text = document.getElementById('inp-review').value;
+  const imgFile = document.getElementById('inp-img').files[0];
+
+  if(!name || !cuisine || !author) { showToast('Missing info!'); return; }
+
+  let imgBase64 = "";
+  if(imgFile) {
+    imgBase64 = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.readAsDataURL(imgFile);
+    });
+  }
+
+  const newReview = { id: Date.now(), name, loc, cuisine, author, rating, text, img: imgBase64, date: new Date().toLocaleDateString() };
+  reviews.push(newReview);
+  
+  if(!cuisineList.includes(cuisine)) cuisineList.push(cuisine);
+  if(!authorList.includes(author)) authorList.push(author);
+
+  saveAll();
+  showToast('Review posted!');
+  showPage('reviews');
+}
+
+function renderReviews() {
+  const grid = document.getElementById('restGrid');
+  grid.innerHTML = reviews.sort((a,b)=>b.id-a.id).map(r => `
+    <div class="rest-card">
+      <div class="tag">${r.cuisine}</div>
+      <h3>${r.name}</h3>
+      <div class="location">📍 ${r.loc}</div>
+      <div class="rating-val" style="color:${getTierColor(r.rating)}">${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span></div>
+      <div class="snippet">${r.text}</div>
+      ${r.img ? `<img src="${r.img}" class="review-img">` : ''}
+    </div>
+  `).join('');
+}
+
+function renderTierBoard() {
+  const tiers = { S:[], A:[], B:[], C:[], D:[], F:[] };
+  reviews.forEach(r => {
+    if(r.rating >= 9) tiers.S.push(r);
+    else if(r.rating >= 8) tiers.A.push(r);
+    else if(r.rating >= 7) tiers.B.push(r);
+    else if(r.rating >= 6) tiers.C.push(r);
+    else if(r.rating >= 4.5) tiers.D.push(r);
+    else tiers.F.push(r);
+  });
+
+  Object.keys(tiers).forEach(t => {
+    const el = document.getElementById('tier-' + t);
+    el.innerHTML = tiers[t].map(r => `<div class="tier-chip">${r.name}</div>`).join('') || '<span class="history-empty">empty</span>';
+  });
+}
+
+function showToast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// Wheel Logic (simplified to work with dynamic cuisines)
+function renderWheel() {
+  const canvas = document.getElementById('wheelCanvas');
+  const ctx = canvas.getContext('2d');
+  const n = cuisineList.length;
+  const arc = (Math.PI*2)/n;
+  ctx.clearRect(0,0,340,340);
+  cuisineList.forEach((c, i) => {
+    ctx.beginPath(); ctx.moveTo(170,170);
+    ctx.arc(170,170,150, i*arc + currentAngle, (i+1)*arc + currentAngle);
+    ctx.fillStyle = `hsl(${(i * 360 / n)}, 50%, 40%)`;
+    ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.translate(170,170); ctx.rotate(i*arc + arc/2 + currentAngle);
+    ctx.fillStyle="#fff"; ctx.fillText(c.substring(0,10), 80, 5); ctx.restore();
+  });
+}
+
+function spinWheel() {
+  const duration = 3000;
+  const start = performance.now();
+  const spins = 5 + Math.random() * 5;
+  function animate(now) {
+    const t = (now - start) / duration;
+    if (t < 1) {
+      currentAngle = (spins * Math.PI * 2) * (1 - Math.pow(1 - t, 3));
+      renderWheel(); requestAnimationFrame(animate);
+    } else {
+      const arc = (Math.PI*2)/cuisineList.length;
+      const index = Math.floor(((Math.PI*2 - (currentAngle % (Math.PI*2))) / arc) % cuisineList.length);
+      document.getElementById('wheelResult').innerHTML = `<div class="cuisine-name">${cuisineList[index]}</div>`;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+// Init
+updateDatalists();
+renderReviews();
+</script>
+</body>
+</html>
