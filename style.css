@@ -109,16 +109,15 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     accent-color: var(--orange);
     transition: accent-color 0.3s ease;
 }
-#ratingValueDisplay{
-    font-size:18px;
-    font-weight:bold;
-    min-width:50px;
-    text-align:center;
-    padding:4px 8px;
-    border-radius:4px;
-    transition: background-color 0.3s ease, color 0.3s ease;
+#ratingValueDisplay {
+    font-size: 24px; /* Slightly larger for visibility */
+    font-weight: bold;
+    min-width: 60px;
+    text-align: right;
+    padding: 4px;
+    transition: color 0.1s linear; /* Fast, smooth color shift */
+    background-color: transparent !important; /* Remove the box as requested */
 }
-
 /* Modals & Toasts */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
