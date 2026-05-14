@@ -364,7 +364,9 @@ async function promptDeleteReview(id) {
 // Initialize the edit slider listener (add this near your other slider logic)
 // --- Edit Functions ---
 
-// 1. Ensure the slider listeners are correctly linked
+let currentEditId = null;
+
+// Initialize the edit slider listener once
 const editSlider = document.getElementById('edit-rating-slider');
 const editDisplay = document.getElementById('edit-rating-display');
 
@@ -378,43 +380,38 @@ if (editSlider) {
     });
 }
 
-// 2. The corrected openEditModal function
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(review => review.id === id);
-    
-    if (!r) return; // Guard clause
+    if (!r) return;
 
-    // Fill Text and Rating Fields
+    // Fill standard text fields
     document.getElementById('edit-name').value = r.name || "";
     document.getElementById('edit-loc').value = r.loc || "";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
 
+    // Sync the Rating Slider
     const rating = r.rating || 7.0;
-    editSlider.value = rating;
-    editDisplay.textContent = rating.toFixed(1);
-    
-    const initialColor = getDynamicColor(rating);
-    editDisplay.style.color = initialColor;
-    editSlider.style.accentColor = initialColor;
+    if (editSlider) {
+        editSlider.value = rating;
+        editDisplay.textContent = rating.toFixed(1);
+        const initialColor = getDynamicColor(rating);
+        editDisplay.style.color = initialColor;
+        editSlider.style.accentColor = initialColor;
+    }
 
-    // Handle Image Management
-    const container = document.getElementById('edit-image-preview-container');
-    container.innerHTML = '';
-    
-    // Normalize images (handle old single strings vs new arrays)
+    // Prepare Images (Convert old strings to arrays if necessary)
     const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-    window.tempEditImages = [...images]; // Store globally for this edit session
-
+    window.tempEditImages = [...images]; 
     renderEditImages();
     
     document.getElementById('editModal').classList.add('show');
 }
 
-// 3. Helper to render images specifically inside the edit modal
 function renderEditImages() {
     const container = document.getElementById('edit-image-preview-container');
+    if (!container) return;
     container.innerHTML = '';
     
     window.tempEditImages.forEach((imgSrc, i) => {
@@ -422,16 +419,15 @@ function renderEditImages() {
         wrapper.className = 'edit-img-wrapper';
         wrapper.innerHTML = `
             <img src="${imgSrc}">
-            <button class="remove-img-btn" onclick="removeImageFromEdit(${i})">✕</button>
+            <button type="button" class="remove-img-btn" onclick="removeImageFromEdit(${i})">✕</button>
         `;
         container.appendChild(wrapper);
     });
 }
 
-// 4. Remove image handler
 function removeImageFromEdit(index) {
     window.tempEditImages.splice(index, 1);
-    renderEditImages(); // Re-render to update indices
+    renderEditImages();
 }
 
 function closeEditModal() {
@@ -439,36 +435,42 @@ function closeEditModal() {
 }
 
 async function saveEdit() {
+    if (!currentEditId) return;
     showToast('Saving changes...');
     
-    const newFiles = document.getElementById('edit-img-input').files;
+    const fileInput = document.getElementById('edit-img-input');
+    const newFiles = fileInput ? fileInput.files : [];
     let uploadedImages = [];
 
-    // Process new images if any
-    if (newFiles.length > 0) {
-        for (let file of newFiles) {
-            const compressed = await resizeImage(file);
-            uploadedImages.push(compressed);
-        }
-    }
-
-    // Merge kept images + new uploads
-    const finalImages = [...window.tempEditImages, ...uploadedImages];
-
-    const update = {
-        name: document.getElementById('edit-name').value,
-        loc: document.getElementById('edit-loc').value,
-        cuisine: document.getElementById('edit-cuisine').value,
-        text: document.getElementById('edit-review').value,
-        rating: parseFloat(editSlider.value), // Capture the new rating
-        img: finalImages 
-    };
-
     try {
+        // Process new uploads
+        if (newFiles.length > 0) {
+            for (let file of newFiles) {
+                const compressed = await resizeImage(file);
+                uploadedImages.push(compressed);
+            }
+        }
+
+        // Final merged list
+        const finalImages = [...(window.tempEditImages || []), ...uploadedImages];
+
+        const update = {
+            name: document.getElementById('edit-name').value.trim(),
+            loc: document.getElementById('edit-loc').value.trim(),
+            cuisine: document.getElementById('edit-cuisine').value.trim(),
+            text: document.getElementById('edit-review').value.trim(),
+            rating: parseFloat(document.getElementById('edit-rating-slider').value),
+            img: finalImages
+        };
+
         await db.collection('reviews').doc(currentEditId).update(update);
+        
         showToast('Updated successfully');
+        if (fileInput) fileInput.value = ''; 
         closeEditModal();
+        
     } catch (e) {
+        console.error("Save Error:", e);
         showToast('Update failed');
     }
 }
@@ -477,10 +479,13 @@ async function saveEdit() {
 function openImageViewer(src) {
     const modal = document.getElementById('imageViewerModal');
     const fullImg = document.getElementById('fullSizeImage');
-    fullImg.src = src;
-    modal.classList.add('show');
+    if (modal && fullImg) {
+        fullImg.src = src;
+        modal.classList.add('show');
+    }
 }
 
 function closeImageViewer() {
-    document.getElementById('imageViewerModal').classList.remove('show');
+    const modal = document.getElementById('imageViewerModal');
+    if (modal) modal.classList.remove('show');
 }
