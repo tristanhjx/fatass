@@ -155,6 +155,9 @@ function renderReviews() {
     }
     grid.innerHTML = reviews.map(r => `
         <div class="rest-card">
+            <div class="card-actions">
+                <button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button>
+            </div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
             <div class="location">📍 ${r.loc}</div>
@@ -163,6 +166,7 @@ function renderReviews() {
             </div>
             <div class="snippet">${r.text}</div>
             ${r.img ? `<img src="${r.img}" class="review-img">` : ''}
+            <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
         </div>`).join('');
 }
 
@@ -322,3 +326,58 @@ window.onload = () => {
     syncWithFirebase();
     renderWheel();
 };
+
+let currentEditId = null;
+let currentDeleteId = null;
+
+// --- Delete Functions ---
+function promptDeleteReview(id) {
+    currentDeleteId = id;
+    document.getElementById('removeModalText').textContent = "This will permanently delete this review from the cloud.";
+    document.getElementById('removeModal').classList.add('show');
+    // Temporarily point the "Confirm" button to a different function
+    const confirmBtn = document.querySelector('#removeModal .btn-danger');
+    confirmBtn.onclick = confirmDeleteReview;
+}
+
+async function confirmDeleteReview() {
+    try {
+        await db.collection('reviews').doc(currentDeleteId).delete();
+        showToast('Review deleted');
+        closeModal();
+    } catch (e) {
+        showToast('Delete failed');
+    }
+}
+
+// --- Edit Functions ---
+function openEditModal(id) {
+    currentEditId = id;
+    const r = reviews.find(review => review.id === id);
+    document.getElementById('edit-name').value = r.name;
+    document.getElementById('edit-loc').value = r.loc;
+    document.getElementById('edit-cuisine').value = r.cuisine;
+    document.getElementById('edit-review').value = r.text;
+    document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+}
+
+async function saveEdit() {
+    const update = {
+        name: document.getElementById('edit-name').value,
+        loc: document.getElementById('edit-loc').value,
+        cuisine: document.getElementById('edit-cuisine').value,
+        text: document.getElementById('edit-review').value
+    };
+
+    try {
+        await db.collection('reviews').doc(currentEditId).update(update);
+        showToast('Updated successfully');
+        closeEditModal();
+    } catch (e) {
+        showToast('Update failed');
+    }
+}
