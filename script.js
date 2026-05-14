@@ -49,11 +49,11 @@ function syncWithFirebase() {
         renderReviews();
         renderTierBoard();
         updateCuisineDatalist();
-        updateAuthorDropdowns(); // Dynamic population of the name list
+        updateAuthorDropdowns(); // Added for the requested name list
     });
 }
 
-// --- 4. Author Dropdown Logic ---
+// --- 4. Dynamic Dropdown Logic ---
 function updateAuthorDropdowns() {
     const uniqueAuthors = [...new Set(reviews.map(r => r.author).filter(Boolean))].sort();
     const addSelect = document.getElementById('inp-author');
@@ -93,7 +93,7 @@ function showPage(pageId) {
 // --- 6. Review CRUD ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
-    const author = document.getElementById('inp-author').value; // Updated to use dropdown
+    const author = document.getElementById('inp-author').value; // Get from select
     const cuisine = document.getElementById('inp-cuisine').value.trim();
     const rating = parseFloat(document.getElementById('ratingSlider').value);
     const text = document.getElementById('inp-review').value.trim();
@@ -143,13 +143,6 @@ function resetForm() {
     document.getElementById('ratingValueDisplay').textContent = '7.0';
 }
 
-async function deleteReview(id) {
-    if(confirm('Delete this review forever?')) {
-        await db.collection('reviews').doc(id).delete();
-        showToast('Review deleted');
-    }
-}
-
 // --- 7. Modal Logic ---
 function openEditModal(id) {
     currentEditId = id;
@@ -177,30 +170,11 @@ function openEditModal(id) {
     document.getElementById('edit-town').value = town;
     document.getElementById('edit-link').value = link;
 
-    window.tempEditImages = r.img || [];
-    renderEditImagePreviews();
     document.getElementById('editModal').classList.add('show');
 }
 
 function closeEditModal() {
     document.getElementById('editModal').classList.remove('show');
-}
-
-function renderEditImagePreviews() {
-    const container = document.getElementById('edit-image-preview-container');
-    container.innerHTML = '';
-    window.tempEditImages.forEach((src, idx) => {
-        const wrap = document.createElement('div');
-        wrap.className = 'edit-img-wrap';
-        wrap.innerHTML = `<img src="${src}" style="width:60px;height:60px;object-fit:cover;">
-                          <button onclick="removeTempImg(${idx})">×</button>`;
-        container.appendChild(wrap);
-    });
-}
-
-function removeTempImg(idx) {
-    window.tempEditImages.splice(idx, 1);
-    renderEditImagePreviews();
 }
 
 async function saveEdit() {
@@ -209,26 +183,14 @@ async function saveEdit() {
     const link = document.getElementById('edit-link').value.trim();
     const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
 
-    const fileInput = document.getElementById('edit-img-input');
-    const newFiles = fileInput ? fileInput.files : [];
-    let uploadedImages = [];
-
     try {
-        if (newFiles.length > 0) {
-            for (let file of newFiles) {
-                const compressed = await resizeImage(file);
-                uploadedImages.push(compressed);
-            }
-        }
-
         const update = {
             name: document.getElementById('edit-name').value.trim(),
-            author: document.getElementById('edit-author').value, // Updated for dropdown
+            author: document.getElementById('edit-author').value, // Save author
             loc: loc,
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
-            rating: parseFloat(document.getElementById('edit-rating-slider').value),
-            img: [...(window.tempEditImages || []), ...uploadedImages]
+            rating: parseFloat(document.getElementById('edit-rating-slider').value)
         };
 
         await db.collection('reviews').doc(currentEditId).update(update);
