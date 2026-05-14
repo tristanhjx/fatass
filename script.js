@@ -18,7 +18,6 @@ async function resizeImage(file, maxWidth = 1024) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                // Export as compact JPEG
                 resolve(canvas.toDataURL('image/jpeg', 0.7)); 
             };
         };
@@ -37,6 +36,7 @@ let spinning = false;
 let currentAngle = 0;
 let pendingRemove = null;
 let editMode = false;
+let currentEditId = null;
 
 const PALETTE = ['#c87941', '#4a9d9c', '#b05070', '#c8a041', '#8a6cc8', '#41a06c', '#6c8ac8', '#c85a5a', '#5a9ec8', '#9d7a4a'];
 let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
@@ -62,13 +62,9 @@ function getDynamicColor(value) {
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
-// In script.js, make sure this function exists:
 function getTierColor(v) {
-    return getDynamicColor(v); // This links it to the slider math
+    return getDynamicColor(v);
 }
-
-// And verify renderReviews uses it:
-// ... `<div class="rating-val" style="color:${getTierColor(r.rating)}">` ...
 
 if (slider) {
     const updateSlider = () => {
@@ -88,8 +84,9 @@ function showPage(id) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     
-    const navMap = { 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
-    if (id in navMap) document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
+    const navMap = { 'home': -1, 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
+    const idx = navMap[id];
+    if (idx !== undefined && idx !== -1) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
 
     if (id === 'spin') { renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
 }
@@ -107,14 +104,20 @@ function syncWithFirebase() {
 // --- 5. Review Logic ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
-    const loc = document.getElementById('inp-loc').value.trim();
+    const region = document.getElementById('inp-region').value;
+    const town = document.getElementById('inp-town').value.trim();
+    const link = document.getElementById('inp-link').value.trim();
+    
+    // Combine for storage: "Town (Region) — Link"
+    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
+
     const cuisine = document.getElementById('inp-cuisine').value.trim();
     const author = document.getElementById('inp-author').value.trim();
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
 
-    if (!name || !cuisine || !author) return showToast('Fill in the basics!');
+    if (!name || !region || !town || !cuisine || !author) return showToast('Fill in all location details!');
 
     let finalImg = "";
     if (imgFile) {
@@ -124,7 +127,7 @@ async function submitReview() {
 
     const newReview = { 
         name, loc, cuisine, author, rating, text, 
-        img: finalImg, 
+        img: finalImg ? [finalImg] : [], 
         date: new Date().toISOString() 
     };
 
@@ -133,7 +136,9 @@ async function submitReview() {
         showToast('Review posted!');
         
         document.getElementById('inp-name').value = '';
-        document.getElementById('inp-loc').value = '';
+        document.getElementById('inp-region').value = '';
+        document.getElementById('inp-town').value = '';
+        document.getElementById('inp-link').value = '';
         document.getElementById('inp-cuisine').value = '';
         document.getElementById('inp-review').value = '';
         document.getElementById('inp-img').value = '';
@@ -153,9 +158,15 @@ function renderReviews() {
         return;
     }
     grid.innerHTML = reviews.map(r => {
-        // Handle both old single-image data and new array data
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
+        // Check if loc contains a link (indicated by " — ")
+        let displayLoc = r.loc;
+        if (r.loc && r.loc.includes(' — ')) {
+            const [textPart, linkPart] = r.loc.split(' — ');
+            displayLoc = `${textPart} <a href="${linkPart}" target="_blank" style="text-decoration:none; margin-left:5px;">🔗</a>`;
+        }
+
         return `
         <div class="rest-card">
             <div class="card-actions">
@@ -163,7 +174,7 @@ function renderReviews() {
             </div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
-            <div class="location">📍 ${r.loc}</div>
+            <div class="location">📍 ${displayLoc}</div>
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
@@ -318,7 +329,6 @@ function promptRemove(i) {
     pendingRemove = i;
     document.getElementById('removeModalText').textContent = `Remove ${wheelCuisines[i].label}?`;
     document.getElementById('removeModal').classList.add('show');
-    // Point confirm button to wheel logic
     const confirmBtn = document.querySelector('#removeModal .btn-danger');
     confirmBtn.onclick = confirmRemove;
 }
@@ -343,7 +353,7 @@ function showToast(m) {
 window.onload = () => {
     syncWithFirebase();
     renderWheel();
-}; // This closing brace and semicolon were missing, which caused the error
+};
 
 // --- Delete Review ---
 async function promptDeleteReview(id) {
@@ -364,9 +374,28 @@ function openEditModal(id) {
     if (!r) return;
 
     document.getElementById('edit-name').value = r.name || "";
-    document.getElementById('edit-loc').value = r.loc || "";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
+
+    // Parse the stored location string: "Town (Region) — Link"
+    const locString = r.loc || "";
+    let town = "", region = "Central", link = "";
+
+    if (locString.includes(' (')) {
+        const parts = locString.split(' (');
+        town = parts[0];
+        const subParts = parts[1].split(')');
+        region = subParts[0];
+        if (subParts[1] && subParts[1].includes(' — ')) {
+            link = subParts[1].split(' — ')[1];
+        }
+    } else {
+        town = locString; // Fallback for old data
+    }
+
+    document.getElementById('edit-town').value = town;
+    document.getElementById('edit-region').value = region;
+    document.getElementById('edit-link').value = link;
 
     const rating = r.rating || 7.0;
     const editSlider = document.getElementById('edit-rating-slider');
@@ -374,8 +403,6 @@ function openEditModal(id) {
     
     if (editSlider && editDisplay) {
         editSlider.value = rating;
-        
-        // This makes the slider color and number change while dragging
         editSlider.oninput = () => {
             const v = parseFloat(editSlider.value).toFixed(1);
             const newColor = getDynamicColor(v);
@@ -383,8 +410,6 @@ function openEditModal(id) {
             editDisplay.style.color = newColor;
             editSlider.style.accentColor = newColor;
         };
-
-        // Run it once immediately so the modal opens with the correct color
         editSlider.oninput();
     }
 
@@ -424,6 +449,11 @@ async function saveEdit() {
     if (!currentEditId) return;
     showToast('Saving...');
     
+    const region = document.getElementById('edit-region').value;
+    const town = document.getElementById('edit-town').value.trim();
+    const link = document.getElementById('edit-link').value.trim();
+    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
+
     const fileInput = document.getElementById('edit-img-input');
     const newFiles = fileInput ? fileInput.files : [];
     let uploadedImages = [];
@@ -438,7 +468,7 @@ async function saveEdit() {
 
         const update = {
             name: document.getElementById('edit-name').value.trim(),
-            loc: document.getElementById('edit-loc').value.trim(),
+            loc: loc,
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
@@ -466,64 +496,4 @@ function openImageViewer(src) {
 function closeImageViewer() {
     const modal = document.getElementById('imageViewerModal');
     if (modal) modal.classList.remove('show');
-}
-
-// gmaps
-let map, autocomplete, marker;
-let activeLocationInputId = ''; // Tracks which field to fill (add or edit)
-
-function openMapModal(inputId) {
-    activeLocationInputId = inputId;
-    document.getElementById('mapModal').classList.add('show');
-    initMap();
-}
-
-function closeMapModal() {
-    document.getElementById('mapModal').classList.remove('show');
-}
-
-function initMap() {
-    const defaultPos = { lat: 1.3521, lng: 103.8198 }; // Default to Singapore
-    
-    map = new google.maps.Map(document.getElementById("googleMap"), {
-        center: defaultPos,
-        zoom: 13,
-        styles: [ { "stylers": [ { "invert_lightness": true }, { "hue": "#ffbb00" }, { "saturation": -100 } ] } ] // Dark Mode Map
-    });
-
-    marker = new google.maps.Marker({
-        map: map,
-        draggable: true,
-        position: defaultPos
-    });
-
-    const input = document.getElementById("map-search");
-    autocomplete = new google.maps.places.Autocomplete(input);
-    autocomplete.bindTo("bounds", map);
-
-    autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (!place.geometry) return;
-
-        if (place.geometry.viewport) map.fitBounds(place.geometry.viewport);
-        else {
-            map.setCenter(place.geometry.location);
-            map.setZoom(17);
-        }
-        marker.setPosition(place.geometry.location);
-    });
-}
-
-function confirmMapLocation() {
-    const place = autocomplete.getPlace();
-    const targetInput = document.getElementById(activeLocationInputId);
-    
-    if (place && place.formatted_address) {
-        targetInput.value = place.name + ", " + place.formatted_address;
-    } else if (document.getElementById('map-search').value) {
-        targetInput.value = document.getElementById('map-search').value;
-    }
-    
-    closeMapModal();
-    document.getElementById('map-search').value = ''; // Clear search for next time
 }
