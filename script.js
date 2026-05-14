@@ -175,30 +175,34 @@ function renderReviews() {
     grid.innerHTML = filtered.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
-        // Handle the Google Maps Link: If a link exists, make the location clickable
-        const locationDisplay = r.mapsLink 
-            ? `<a href="${r.mapsLink}" target="_blank" style="color:var(--teal); text-decoration:none;">📍 ${r.loc || 'Unknown'}</a>`
-            : `📍 ${r.loc || 'Unknown'}`;
-
         return `
-        <div class="rest-card">
-            <div class="card-actions">
+        <div class="rest-card" style="position:relative;"> <div class="card-actions">
                 <button class="action-icon" onclick="openEditModal('${r.id}')">✏️</button>
+                <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
             </div>
+            
             <div class="tag">${r.cuisine || 'Cuisine'}</div>
-            <div class="region-tag" style="font-size:10px; color:var(--muted); margin-bottom:5px;">${r.region || 'Uncategorized'}</div>
-            <h3>${r.name}</h3>
-            <div class="location" style="margin-bottom:10px; font-size:11px;">
-                ${locationDisplay}
+            <div class="region-tag" style="font-size:10px; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;">
+                ${r.region || 'Uncategorized'}
             </div>
+            
+            <h3>${r.name}</h3>
+            
+            <div class="location" style="margin-bottom:10px; font-size:11px;">
+                ${r.mapsLink 
+                    ? `<a href="${r.mapsLink}" target="_blank" style="color:var(--teal); text-decoration:none;">📍 ${r.loc || 'View Map'}</a>`
+                    : `📍 ${r.loc || 'Unknown'}`}
+            </div>
+    
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
+            
             <div class="snippet">${r.text}</div>
+            
             <div class="image-gallery">
                 ${images.map(imgSrc => `<img src="${imgSrc}" class="review-img-thumb" onclick="openImageViewer('${imgSrc}')">`).join('')}
             </div>
-            <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
         </div>`;
     }).join('');
 }
