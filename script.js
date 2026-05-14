@@ -124,11 +124,17 @@ async function submitReview() {
         finalImg = await resizeImage(imgFile);
     }
 
-    const newReview = { 
-        name, loc, cuisine, author, rating, text, 
-        mapsLink, region, // Added new fields
-        img: finalImg, 
-        date: new Date().toISOString() 
+    const newReview = {
+    name: document.getElementById('inp-name').value.trim(),
+    loc: document.getElementById('inp-loc').value.trim(),
+    region: document.getElementById('inp-region').value, // Capture Region
+    mapsLink: document.getElementById('inp-maps-link').value.trim(), // Capture Link
+    cuisine: document.getElementById('inp-cuisine').value.trim(),
+    author: document.getElementById('inp-author').value.trim(),
+    rating: parseFloat(document.getElementById('ratingSlider').value),
+    text: document.getElementById('inp-review').value.trim(),
+    img: finalImg, 
+    date: new Date().toISOString()
     };
 
     try {
