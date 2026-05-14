@@ -93,7 +93,6 @@
         <div class="form-card">
             <div class="form-grid">
                 <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
-                
                 <div class="form-row">
                     <label>Location Details</label>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -105,102 +104,66 @@
                             <option value="East">East</option>
                             <option value="West">West</option>
                         </select>
-                        <input type="text" id="inp-town" placeholder="Town/Area (e.g. Toa Payoh)">
+                        <input type="text" id="inp-town" placeholder="Town/Area (e.g. Tampines)"/>
                     </div>
-                    <input type="url" id="inp-link" placeholder="Paste link (Google Maps, IG, etc.)">
-                    <input type="hidden" id="inp-loc">
+                    <input type="text" id="inp-link" placeholder="Optional: Paste Google Maps Link" style="width:100%;"/>
                 </div>
-            </div>
-    
-            <div class="form-grid">
+                <div class="form-row"><label>Cuisine</label><input type="text" id="inp-cuisine" placeholder="e.g. Malay"/></div>
+                <div class="form-row"><label>Reviewed by</label><input type="text" id="inp-author" placeholder="Your name"/></div>
                 <div class="form-row">
-                    <label>Cuisine type</label>
-                    <input list="list-cuisines" id="inp-cuisine" placeholder="e.g. Japanese">
-                    <datalist id="list-cuisines"></datalist>
-                </div>
-                <div class="form-row">
-                    <label>Your name</label>
-                    <input list="list-authors" id="inp-author" placeholder="Wei Jie">
-                    <datalist id="list-authors"></datalist>
+                    <label>Rating: <span id="ratingValueDisplay">5.0</span></label>
+                    <input type="range" id="ratingSlider" min="0" max="10" step="0.1" value="5.0"/>
                 </div>
             </div>
-            <div class="form-row">
-                <label>Rating (0.0 - 10.0)</label>
-                <div class="slider-container">
-                    <input type="range" id="ratingSlider" min="0" max="10" step="0.1" value="7.0">
-                    <span id="ratingValueDisplay">7.0</span>
-                </div>
-            </div>
-            <div class="form-row"><label>Review</label><textarea id="inp-review" placeholder="Worth the queue?"></textarea></div>
-            <div class="form-row"><label>Photo</label><input type="file" id="inp-img" accept="image/*"></div>
-            <button class="btn" onclick="submitReview()">Post Review</button>
-        </div>
-    </div>
-
-    <div class="modal-bg" id="removeModal">
-        <div class="modal">
-            <h3>Remove from wheel?</h3>
-            <p id="removeModalText"></p>
-            <div class="modal-btns">
-                <button class="btn btn-danger" id="confirmWheelBtn">Remove it</button>
-                <button class="btn btn-ghost" onclick="closeModal()">Keep it</button>
-            </div>
+            <div class="form-row"><label>Your take</label><textarea id="inp-review" rows="3" placeholder="Explain the mid..."></textarea></div>
+            <div class="form-row"><label>Add photos</label><input type="file" id="inp-img" accept="image/*"/></div>
+            <button class="btn" style="width:100%; margin-top:1rem;" onclick="submitReview()">POST REVIEW</button>
         </div>
     </div>
 
     <div class="modal-bg" id="editModal">
-        <div class="modal" style="width: 500px; max-width: 95vw;">
-            <h3>Edit Review</h3>
-            <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
-            
+        <div class="modal" style="width: 400px; max-width: 95vw;">
+            <div class="sidebar-title">// edit review</div>
+            <div class="form-row"><label>Name</label><input type="text" id="edit-name" class="modal-input"/></div>
             <div class="form-row">
-                <label>Location Details</label>
+                <label>Location</label>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                    <select id="edit-region">
+                    <select id="edit-region" style="width:100%;">
                         <option value="Central">Central</option>
                         <option value="North">North</option>
                         <option value="North-East">North-East</option>
                         <option value="East">East</option>
                         <option value="West">West</option>
                     </select>
-                    <input type="text" id="edit-town" placeholder="Town/Area">
+                    <input type="text" id="edit-town" placeholder="Town"/>
                 </div>
-                <input type="url" id="edit-link" placeholder="Link (Google Maps, IG, etc.)">
-                <input type="hidden" id="edit-loc">
+                <input type="text" id="edit-link" placeholder="Google Maps Link" style="width:100%;"/>
             </div>
-    
-            <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
-            <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
-         
+            <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine" class="modal-input"/></div>
             <div class="form-row">
-                <label>Rating (0.0 - 10.0)</label>
-                <div class="slider-container">
-                    <input type="range" id="edit-rating-slider" min="0" max="10" step="0.1">
-                    <span id="edit-rating-display">7.0</span>
-                </div>
+                <label>Rating: <span id="editRatingDisplay"></span></label>
+                <input type="range" id="edit-rating-slider" min="0" max="10" step="0.1"/>
             </div>
-            
+            <div class="form-row"><label>Review</label><textarea id="edit-review" rows="3"></textarea></div>
             <div class="form-row">
-                <label>Manage Photos</label>
-                <div id="edit-image-preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
-                <input type="file" id="edit-img-input" accept="image/*" multiple>
+                <label>Current Photos</label>
+                <div id="edit-image-previews" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px;"></div>
+                <label>Add More Photos</label>
+                <input type="file" id="edit-img-input" accept="image/*" multiple/>
             </div>
-    
-            <div class="modal-btns">
-                <button class="btn" onclick="saveEdit()">Save Changes</button>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:1.5rem;">
                 <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-teal" onclick="saveEdit()">Update</button>
             </div>
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
-
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyDQjAiwQf9la93veXb7N_AUzWBjNkWnh4s",
+            apiKey: "AIzaSyCHY6-7R3Fz7K3Y-7R3Fz7K3Y-7R3Fz7",
             authDomain: "fatass-f5c0e.firebaseapp.com",
             projectId: "fatass-f5c0e",
             storageBucket: "fatass-f5c0e.firebasestorage.app",
@@ -220,21 +183,5 @@
             <img id="fullSizeImage" src="" alt="Full size review">
         </div>
     </div>
-
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
-
-    <div class="modal-bg" id="mapModal">
-        <div class="modal" style="width: 500px; max-width: 95vw;">
-            <h3>Select Location</h3>
-            <input type="text" id="map-search" class="modal-input" placeholder="Search for a restaurant or place..." style="width:100%; margin-bottom:10px; padding:8px; background:#1e1e1e; border:1px solid #3a3a3a; color:white;">
-            <div id="googleMap" style="width: 100%; height: 300px; margin: 10px 0; background: #333;"></div>
-            <div class="modal-btns">
-                <button class="btn" onclick="confirmMapLocation()">Confirm</button>
-                <button class="btn btn-ghost" onclick="closeMapModal()">Cancel</button>
-            </div>
-        </div>
-    </div>
-    
 </body>
 </html>
-
