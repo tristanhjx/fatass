@@ -14,10 +14,11 @@
 /* --- 2. Update the .rating-val style --- */
 .rating-val {
     font-weight: bold;
-    font-size: 24px;
+    font-size: 24px; /* Increased from 14px */
     margin-bottom: .5rem;
-    /* REMOVED: color: ... any static color here */
-    /* JavaScript will now inject the color directly into the 'style' attribute */
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
 }
 
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh;}
