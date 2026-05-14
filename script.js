@@ -375,19 +375,18 @@ function openEditModal(id) {
     if (editSlider && editDisplay) {
         editSlider.value = rating;
         
-        // Define what happens when you slide
+        // This makes the slider color and number change while dragging
         editSlider.oninput = () => {
             const v = parseFloat(editSlider.value).toFixed(1);
-            const newColor = getDynamicColor(v); // Uses your existing math function
+            const newColor = getDynamicColor(v);
             editDisplay.textContent = v;
             editDisplay.style.color = newColor;
             editSlider.style.accentColor = newColor;
         };
 
-        // Trigger once immediately so it opens with the correct color
+        // Run it once immediately so the modal opens with the correct color
         editSlider.oninput();
     }
-    // --------------------------------------
 
     const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
     window.tempEditImages = [...images]; 
