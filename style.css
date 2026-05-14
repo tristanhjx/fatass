@@ -17,26 +17,21 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .logo-sm { font-size: 16px; letter-spacing: 1px; text-transform: uppercase; color: var(--orange); cursor: pointer; }
 .logo-sm .a { color: var(--teal); }
 .nav-links { display: flex; }
-.nav-btn { background: none; border: none; color: var(--muted); font-family: var(--font); font-size: 11px; padding: 0 .9rem; height: 52px; cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; letter-spacing: 1px; text-transform: uppercase; }
-.nav-btn:hover { color: var(--text); }
+.nav-btn { background: none; border: none; color: var(--muted); font-family: var(--font); font-size: 11px; padding: 0 .9rem; height: 52px; cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; text-transform: uppercase; }
 .nav-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
 
-/* --- 3. Layouts --- */
+/* --- 3. Layouts & Pages --- */
 .page { display: none; padding: 2rem; max-width: 1100px; margin: 0 auto; }
 .page.active { display: block; }
 
-#page-home { display: none; max-width: 900px; margin: 0 auto; padding: 0; }
 #page-home.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 52px); }
-
 .home-logo { text-align: center; margin-bottom: 3rem; }
-.home-logo h1 { font-size: 64px; letter-spacing: 3px; text-transform: uppercase; color: var(--orange); line-height: 1; }
+.home-logo h1 { font-size: 64px; color: var(--orange); text-transform: uppercase; }
 .home-logo h1 .a { color: var(--teal); }
-.home-logo p { color: var(--muted); letter-spacing: 2px; font-size: 11px; margin-top: .75rem; }
 
 .home-btns { display: flex; flex-direction: column; gap: .75rem; width: 260px; }
-.home-nav-btn { background: none; border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: 1rem; cursor: pointer; transition: all .2s; text-align: left; }
+.home-nav-btn { background: none; border: 1px solid var(--border); color: var(--text); font-family: var(--font); padding: 1rem; cursor: pointer; text-align: left; text-transform: uppercase; letter-spacing: 2px; }
 .home-nav-btn:hover { border-color: var(--orange); color: var(--orange); }
-.home-nav-btn .arrow { float: right; color: var(--muted); }
 
 /* --- 4. Review Cards --- */
 .rest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
@@ -45,112 +40,98 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
     background: var(--card); 
     border: 1px solid var(--border); 
     padding: 1.25rem; 
-    transition: border-color .2s, transform .15s; 
     position: relative; 
-    isolation: isolate; /* Ensures children z-index works correctly */
+    transition: transform 0.15s;
+    isolation: isolate; /* FIX: Critical for child z-index */
 }
 .rest-card:hover { border-color: var(--orange); transform: translateY(-2px); }
 
-.rest-card .tag { display: inline-block; background: var(--bg3); color: var(--teal); font-size: 10px; letter-spacing: 2px; padding: 3px 8px; text-transform: uppercase; margin-bottom: .75rem; margin-right: 40px; }
-.rest-card h3 { font-size: 15px; color: var(--text); margin-bottom: .4rem; letter-spacing: 1px; padding-right: 40px; }
-.rest-card .location { color: var(--muted); font-size: 11px; margin-bottom: .75rem; }
+.rest-card .tag { display: inline-block; background: var(--bg3); color: var(--teal); font-size: 10px; padding: 3px 8px; text-transform: uppercase; margin-bottom: .75rem; }
+.rest-card h3 { font-size: 15px; margin-bottom: .4rem; padding-right: 60px; }
+.location a { color: var(--teal); text-decoration: none; }
 
-.rating-val { font-weight: bold; font-size: 14px; margin-bottom: .5rem; }
-.snippet { color: var(--muted); font-size: 11px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .75rem; }
-.review-img { width: 100%; height: 180px; object-fit: cover; margin-top: 1rem; border: 1px solid var(--border); }
-
-/* --- 5. Action Icons (THE FIX) --- */
+/* --- 5. Action Icons (FIXED HITBOXES) --- */
 .card-actions {
     position: absolute;
     top: 10px;
     right: 10px;
     display: flex;
     gap: 8px;
-    z-index: 50;
+    z-index: 100;
 }
 
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
-    color: var(--text);
-    /* Essential: width/height ensures the button is clickable */
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    cursor: pointer !important;
-    font-size: 12px;
+    /* Essential: width/height + flex makes the emoji clickable */
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer !important;
     border-radius: 4px;
-    pointer-events: auto; /* Force clickability */
+    font-size: 14px;
+    pointer-events: auto; /* Force response */
 }
 
 .action-icon:hover { background: var(--bg); transform: scale(1.1); }
-.edit-btn:hover { border-color: #f1c40f; color: #f1c40f; }
+.edit-btn:hover { border-color: #f1c40f; }
 
-.delete-btn {
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
-    z-index: 50;
+/* In your JS, the delete button is also an .action-icon */
+.delete-btn { position: relative; } /* Overrides the absolute positioning from previous failed attempts */
+.delete-btn:hover { border-color: #c84a4a; }
+
+/* --- 6. Form Layout (MATCHING YOUR HTML) --- */
+.form-card { background: var(--card); border: 1px solid var(--border); padding: 2rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+
+.form-row { margin-bottom: 1.25rem; }
+.form-row label { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: .5rem; letter-spacing: 1px; }
+.form-row input, .form-row select, .form-row textarea { 
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); 
+    font-family: var(--font); padding: .7rem; outline: none; 
 }
-.delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
 
-/* --- 6. Spin Wheel & Sidebar --- */
-.spin-layout { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; align-items: start; }
-@media(max-width:700px) { .spin-layout { grid-template-columns: 1fr; } }
+.slider-container { display: flex; align-items: center; gap: 15px; }
+#ratingSlider { flex: 1; accent-color: var(--orange); cursor: pointer; }
+#ratingValueDisplay { font-size: 24px; font-weight: bold; width: 50px; text-align: right; }
 
-.wheel-wrap { display: flex; flex-direction: column; align-items: center; padding: .5rem 0; }
-#wheelCanvas { border: 2px solid var(--border); display: block; max-width: 100%; }
-.wheel-result { margin-top: 1.25rem; text-align: center; min-height: 56px; }
-.wheel-result .cuisine-name { font-size: 26px; letter-spacing: 3px; text-transform: uppercase; }
+/* --- 7. Spin Wheel & Sidebar --- */
+.spin-layout { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; }
+@media (max-width: 800px) { .spin-layout { grid-template-columns: 1fr; } }
 
-.sidebar-box { background: var(--card); border: 1px solid var(--border); padding: 1rem; }
-.history-list, .cuisine-edit-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
-.history-item, .cuisine-edit-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: var(--bg3); }
+#wheelCanvas { border: 2px solid var(--border); background: var(--bg2); }
+.sidebar-box { background: var(--card); border: 1px solid var(--border); padding: 1rem; margin-bottom: 1rem; }
 
-/* --- 7. Tier List --- */
-.tier-row { display: flex; min-height: 70px; border: 1px solid var(--border); margin-bottom: 4px; }
-.tier-label { width: 70px; min-width: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; border-right: 1px solid var(--border); }
+/* --- 8. Tier List --- */
+.tier-row { display: flex; min-height: 70px; border: 1px solid var(--border); margin-bottom: 5px; }
+.tier-label { 
+    width: 70px; display: flex; flex-direction: column; align-items: center; 
+    justify-content: center; font-size: 20px; font-weight: bold; border-right: 1px solid var(--border); 
+}
+.tier-items { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; flex: 1; background: var(--card); }
+.tier-chip { background: var(--bg3); border: 1px solid var(--border); padding: 5px 10px; font-size: 11px; }
+
 .tier-s .tier-label { background: var(--color-s); color: #fff; }
 .tier-a .tier-label { background: var(--color-a); color: #fff; }
 .tier-b .tier-label { background: var(--color-b); color: #fff; }
 .tier-c .tier-label { background: var(--color-c); color: #fff; }
 .tier-d .tier-label { background: var(--color-d); color: var(--muted); }
-.tier-f .tier-label { background: #1e1010; color: var(--color-f); }
-.tier-items { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; flex: 1; background: var(--card); }
-.tier-chip { background: var(--bg3); border: 1px solid var(--border); padding: 6px 12px; font-size: 11px; }
+.tier-f .tier-label { background: #1a0a0a; color: var(--color-f); }
 
-/* --- 8. Add Review Form (RESTORED TO ORIGINAL FLOW) --- */
-.form-card { background: var(--card); border: 1px solid var(--border); padding: 2rem; margin-top: 1rem; }
-.form-row { margin-bottom: 1.25rem; }
-.form-row label { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: .4rem; }
-.form-row input, .form-row select, .form-row textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 13px; padding: .6rem .8rem; outline: none; }
-
-.slider-container { display: flex; align-items: center; gap: 15px; }
-#ratingSlider { flex: 1; accent-color: var(--orange); cursor: pointer; }
-#ratingValueDisplay { font-size: 24px; font-weight: bold; min-width: 55px; text-align: right; }
-
-/* --- 9. Multi-Image & Viewer --- */
-.image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 10px; }
-.review-img-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--border); cursor: pointer; }
-
-#fullSizeImage { max-width: 100%; max-height: 90vh; border: 2px solid var(--orange); object-fit: contain; }
-
-.edit-img-wrapper { position: relative; width: 80px; height: 80px; }
-.edit-img-wrapper img { width: 100%; height: 100%; object-fit: cover; border: 1px solid var(--orange); }
-.remove-img-btn { position: absolute; top: -5px; right: -5px; background: #c84a4a; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-/* --- 10. Modals & Toast --- */
-.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: center; justify-content: center; }
+/* --- 9. Modals & Images --- */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
 .modal-bg.show { display: flex; }
-.modal { background: var(--bg2); border: 1px solid var(--border); padding: 2rem; width: 340px; max-width: 90vw; }
+.modal { background: var(--bg2); border: 1px solid var(--border); padding: 2rem; width: 450px; max-width: 90vw; }
 
-.btn { background: var(--orange); color: #fff; border: none; font-family: var(--font); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: .7rem 2rem; cursor: pointer; transition: background .2s; }
+.image-gallery { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.review-img-thumb { width: 60px; height: 60px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; }
+
+.btn { background: var(--orange); color: #fff; border: none; font-family: var(--font); padding: .75rem 1.5rem; cursor: pointer; text-transform: uppercase; font-size: 11px; }
 .btn-teal { background: var(--teal); }
-.btn-danger { background: none; border: 1px solid #c84a4a; color: #c84a4a; }
 .btn-ghost { background: none; border: 1px solid var(--border); color: var(--muted); }
 
-.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--teal); color: #fff; font-family: var(--font); font-size: 12px; padding: .75rem 1.5rem; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; z-index: 999; }
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--teal); color: #fff; padding: 1rem 2rem; opacity: 0; transform: translateY(20px); transition: 0.3s; z-index: 2000; }
 .toast.show { opacity: 1; transform: translateY(0); }
