@@ -31,6 +31,14 @@
     letter-spacing: 0;
 }
 
+#restGrid .snippet {
+    white-space: pre-line; /* This makes line breaks work */
+    word-wrap: break-word; /* Prevents long words from breaking the layout */
+    margin-top: 10px;
+    color: var(--text);
+    line-height: 1.5;
+}
+
 /* --- 2. Bigger Cuisine Tag --- */
 #restGrid .tag {
     font-size: 14px !important;
