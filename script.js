@@ -64,9 +64,7 @@ function getDynamicColor(value) {
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
-function getTierColor(v) {
-    return getDynamicColor(v);
-}
+function getTierColor(v) { return getDynamicColor(v); }
 
 if (slider) {
     const updateSlider = () => {
@@ -86,11 +84,11 @@ function showPage(id) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     
-    const navMap = { 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
-    if (id in navMap) document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
-
-    if (id === 'spin') { renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
-    if (id === 'add') { renderAuthorDropdown(); }
+    const navButtons = document.querySelectorAll('.nav-btn');
+    if (id === 'reviews') navButtons[0].classList.add('active');
+    if (id === 'spin') { navButtons[1].classList.add('active'); renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
+    if (id === 'tier') navButtons[2].classList.add('active');
+    if (id === 'add') { navButtons[3].classList.add('active'); renderAuthorDropdown(); }
 }
 
 function syncWithFirebase() {
@@ -182,7 +180,6 @@ function renderReviews() {
     }
     grid.innerHTML = reviews.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-        
         let displayLoc = r.loc || "";
         if (displayLoc.includes(' — ')) {
             const parts = displayLoc.split(' — ');
@@ -191,9 +188,7 @@ function renderReviews() {
 
         return `
         <div class="rest-card">
-            <div class="card-actions">
-                <button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button>
-            </div>
+            <div class="card-actions"><button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button></div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
             <div class="location">📍 ${displayLoc}</div>
@@ -219,9 +214,7 @@ function autoMapToTier(review) {
     else if (v >= 6.0) tier = 'C';
     else if (v >= 4.5) tier = 'D';
 
-    if (!tierData[tier].some(x => x.name === review.name)) {
-        tierData[tier].push({ name: review.name });
-    }
+    tierData[tier].push({ name: review.name });
 }
 
 function renderTierBoard() {
@@ -256,8 +249,6 @@ function drawWheel(ctx, angle) {
     });
     ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = '#1e1e1e'; ctx.fill();
     ctx.strokeStyle = '#c87941'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx, cy - r - 5); ctx.lineTo(cx - 10, cy - r + 14); ctx.lineTo(cx + 10, cy - r + 14);
-    ctx.closePath(); ctx.fillStyle = '#e8e4dc'; ctx.fill();
 }
 
 function spinWheel() {
@@ -294,30 +285,25 @@ function showSpinResult(c, idx) {
     document.getElementById('resultActions').innerHTML = `<button class="btn btn-danger" style="font-size:10px;padding:5px 10px;" onclick="promptRemove(${idx})">Remove from wheel</button>`;
 }
 
-// --- 9. Management ---
+// --- 9. Helpers & Management ---
 function renderHistory() {
     const el = document.getElementById('historyList');
     if(el) el.innerHTML = spinHistory.map(h => `<div class="history-item"><span style="color:${h.color}">${h.label}</span><span class="history-time">${h.time}</span></div>`).join('') || '<span class="history-empty">no spins</span>';
 }
-
 function clearHistory() { spinHistory = []; localStorage.removeItem(HISTORY_KEY); renderHistory(); }
-
 function toggleEdit() {
     editMode = !editMode;
     document.getElementById('cuisineViewList').style.display = editMode ? 'none' : 'block';
     document.getElementById('cuisineEditPanel').style.display = editMode ? 'block' : 'none';
 }
-
 function renderCuisineView() {
     const el = document.getElementById('cuisineViewList');
     if(el) el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px;">` + wheelCuisines.map(c => `<span style="border:1px solid ${c.color};color:${c.color};font-size:10px;padding:2px 5px;">${c.label}</span>`).join('') + `</div>`;
 }
-
 function renderCuisineEditList() {
     const el = document.getElementById('cuisineEditList');
     if(el) el.innerHTML = wheelCuisines.map((c, i) => `<div class="cuisine-edit-item"><div class="cuisine-color-dot" style="background:${c.color}"></div><span>${c.label}</span><button onclick="removeCuisine(${i})">✕</button></div>`).join('');
 }
-
 function addCuisine() {
     const i = document.getElementById('newCuisineInput'), l = i.value.trim();
     if (!l) return;
@@ -325,19 +311,16 @@ function addCuisine() {
     localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
     i.value = ''; renderWheel(); renderCuisineView(); renderCuisineEditList();
 }
-
 function removeCuisine(i) {
     wheelCuisines.splice(i, 1);
     localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
     renderWheel(); renderCuisineView(); renderCuisineEditList();
 }
-
 function promptRemove(i) {
     pendingRemove = i;
     document.getElementById('removeModalText').textContent = `Remove ${wheelCuisines[i].label}?`;
     document.getElementById('removeModal').classList.add('show');
 }
-
 function confirmRemove() {
     wheelCuisines.splice(pendingRemove, 1);
     localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
@@ -345,9 +328,7 @@ function confirmRemove() {
     renderWheel();
     document.getElementById('wheelResult').innerHTML = '<div class="cuisine-sub">removed</div>';
 }
-
 function closeModal() { document.getElementById('removeModal').classList.remove('show'); }
-
 function showToast(m) {
     const t = document.getElementById('toast');
     if(!t) return;
@@ -355,7 +336,7 @@ function showToast(m) {
     setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// --- 10. Global Init ---
+// --- 10. Edit & Global ---
 window.onload = () => {
     syncWithFirebase();
     renderWheel();
@@ -369,12 +350,10 @@ async function promptDeleteReview(id) {
     }
 }
 
-// --- Edit Logic ---
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(x => x.id === id);
     if (!r) return;
-
     document.getElementById('edit-name').value = r.name || "";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
@@ -402,7 +381,6 @@ function openEditModal(id) {
         eSlider.style.accentColor = getDynamicColor(v);
     };
     eSlider.oninput();
-
     window.tempEditImages = Array.isArray(r.img) ? [...r.img] : (r.img ? [r.img] : []);
     renderEditImages();
     document.getElementById('editModal').classList.add('show');
@@ -416,7 +394,6 @@ function renderEditImages() {
             <button class="remove-img-btn" onclick="removeImageFromEdit(${i})">✕</button>
         </div>`).join('');
 }
-
 function removeImageFromEdit(i) { window.tempEditImages.splice(i, 1); renderEditImages(); }
 function closeEditModal() { document.getElementById('editModal').classList.remove('show'); }
 
@@ -424,10 +401,7 @@ async function saveEdit() {
     const loc = `${document.getElementById('edit-town').value.trim()} (${document.getElementById('edit-region').value})${document.getElementById('edit-link').value.trim() ? ' — ' + document.getElementById('edit-link').value.trim() : ''}`;
     const fileInput = document.getElementById('edit-img-input');
     let uploaded = [];
-    if (fileInput.files.length) {
-        for (let f of fileInput.files) { uploaded.push(await resizeImage(f)); }
-    }
-
+    if (fileInput.files.length) { for (let f of fileInput.files) { uploaded.push(await resizeImage(f)); } }
     try {
         await db.collection('reviews').doc(currentEditId).update({
             name: document.getElementById('edit-name').value.trim(),
@@ -437,8 +411,7 @@ async function saveEdit() {
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
             img: [...window.tempEditImages, ...uploaded]
         });
-        showToast('Saved');
-        closeEditModal();
+        showToast('Saved'); closeEditModal();
     } catch (e) { showToast('Error'); }
 }
 
