@@ -93,8 +93,24 @@
         <div class="form-card">
             <div class="form-grid">
                 <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
-                <div class="form-row"><label>Location</label><input type="text" id="inp-loc" placeholder="e.g. Toa Payoh"/></div>
+                <div class="form-row">
+                    <label>Region</label>
+                    <select id="inp-region" style="width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 13px; padding: .6rem .8rem; outline: none;">
+                        <option value="">Select Region...</option>
+                        <option value="North">North</option>
+                        <option value="South">South</option>
+                        <option value="East">East</option>
+                        <option value="West">West</option>
+                        <option value="Central">Central</option>
+                    </select>
+                </div>
             </div>
+    
+            <div class="form-grid">
+                <div class="form-row"><label>Location (Area Name)</label><input type="text" id="inp-loc" placeholder="e.g. Toa Payoh"/></div>
+                <div class="form-row"><label>Google Maps Link</label><input type="url" id="inp-maps-link" placeholder="Paste link here..."/></div>
+            </div>
+    
             <div class="form-grid">
                 <div class="form-row">
                     <label>Cuisine type</label>
@@ -107,6 +123,7 @@
                     <datalist id="list-authors"></datalist>
                 </div>
             </div>
+    
             <div class="form-row">
                 <label>Rating (0.0 - 10.0)</label>
                 <div class="slider-container">
@@ -114,6 +131,7 @@
                     <span id="ratingValueDisplay">7.0</span>
                 </div>
             </div>
+    
             <div class="form-row"><label>Review</label><textarea id="inp-review" placeholder="Worth the queue?"></textarea></div>
             <div class="form-row"><label>Photo</label><input type="file" id="inp-img" accept="image/*"></div>
             <button class="btn" onclick="submitReview()">Post Review</button>
