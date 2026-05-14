@@ -112,7 +112,6 @@ async function submitReview() {
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
 
-    // Validation update: Ensure name, region, town, cuisine, and author are present
     if (!name || !region || !town || !cuisine || !author) return showToast('Fill in all required fields!');
 
     let finalImg = "";
@@ -121,7 +120,6 @@ async function submitReview() {
         finalImg = await resizeImage(imgFile);
     }
 
-    // Combine manual fields into a single location string for the DB
     const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
 
     const newReview = { 
@@ -134,7 +132,6 @@ async function submitReview() {
         await db.collection('reviews').add(newReview);
         showToast('Review posted!');
         
-        // Reset all fields
         document.getElementById('inp-name').value = '';
         document.getElementById('inp-region').value = '';
         document.getElementById('inp-town').value = '';
@@ -146,7 +143,6 @@ async function submitReview() {
         showPage('reviews');
     } catch (e) {
         showToast('Upload failed!');
-        console.error(e);
     }
 }
 
@@ -159,14 +155,10 @@ function renderReviews() {
     }
     grid.innerHTML = reviews.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-        
-        // Handle Map Link
         let displayLoc = r.loc || "";
         if (displayLoc.includes(' — ')) {
             const parts = displayLoc.split(' — ');
-            const textPart = parts[0];
-            const urlPart = parts[1];
-            displayLoc = `${textPart} • <a href="${urlPart}" target="_blank" style="color:var(--teal); text-decoration:underline;">Map</a>`;
+            displayLoc = `${parts[0]} • <a href="${parts[1]}" target="_blank" style="color:var(--teal); text-decoration:underline;">Map</a>`;
         }
 
         return `
@@ -180,21 +172,17 @@ function renderReviews() {
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
-            
             <div class="snippet">${r.text}</div>
-            
             <div class="image-gallery">
                 ${images.map(imgSrc => `
-                    <img src="${imgSrc}" 
-                         class="review-img-thumb" 
-                         onclick="openImageViewer('${imgSrc}')">
+                    <img src="${imgSrc}" class="review-img-thumb" onclick="openImageViewer('${imgSrc}')">
                 `).join('')}
             </div>
-            
             <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
         </div>`;
     }).join('');
 }
+
 // --- 6. Tier List Logic ---
 function autoMapToTier(review) {
     let tier = 'F';
@@ -234,259 +222,154 @@ function drawWheel(ctx, angle) {
     wheelCuisines.forEach((c, i) => {
         const start = angle + i * arc, end = start + arc;
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, start, end); ctx.closePath();
-        ctx.fillStyle = c.color; ctx.fill();
-        ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.save(); ctx.translate(cx, cy); ctx.rotate(start + arc / 2);
-        ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Monaco,monospace';
-        ctx.fillText(c.label, r - 10, 4); ctx.restore();
+        ctx.fillStyle = c.color; ctx.fill(); ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(start + arc / 2); ctx.textAlign = 'right';
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Monaco,monospace'; ctx.fillText(c.label, r - 10, 4);
+        ctx.restore();
     });
-    ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = '#1e1e1e'; ctx.fill();
-    ctx.strokeStyle = '#c87941'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx, cy - r - 5); ctx.lineTo(cx - 10, cy - r + 14); ctx.lineTo(cx + 10, cy - r + 14);
-    ctx.closePath(); ctx.fillStyle = '#e8e4dc'; ctx.fill();
 }
 
 function spinWheel() {
     if (spinning || !wheelCuisines.length) return;
     spinning = true;
     document.getElementById('spinBtn').disabled = true;
-    const canvas = document.getElementById('wheelCanvas'), ctx = canvas.getContext('2d');
-    const extraSpins = 10 + Math.random() * 5, totalRot = Math.PI * 2 * extraSpins, duration = 6500, start = performance.now(), startAngle = currentAngle;
+    const duration = 4000;
+    const start = performance.now();
+    const totalRotation = 15 + Math.random() * 10;
 
-    function frame(now) {
-        const t = Math.min((now - start) / duration, 1);
-        currentAngle = startAngle + totalRot * (1 - Math.pow(1 - t, 4));
-        drawWheel(ctx, currentAngle);
-        if (t < 1) requestAnimationFrame(frame);
-        else {
-            spinning = false;
-            document.getElementById('spinBtn').disabled = false;
-            const arc = 2 * Math.PI / wheelCuisines.length;
-            const adjusted = (((-Math.PI / 2) - currentAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-            const idx = Math.floor(adjusted / arc) % wheelCuisines.length;
-            showSpinResult(wheelCuisines[idx], idx);
-        }
+    function animate(time) {
+        let elapsed = time - start;
+        let progress = Math.min(elapsed / duration, 1);
+        let ease = 1 - Math.pow(1 - progress, 3);
+        currentAngle = ease * totalRotation * 2 * Math.PI;
+        renderWheel();
+        if (progress < 1) requestAnimationFrame(animate);
+        else finishSpin();
     }
-    document.getElementById('wheelResult').innerHTML = '<div class="cuisine-sub">spinning...</div>';
-    requestAnimationFrame(frame);
+    requestAnimationFrame(animate);
 }
 
-function showSpinResult(c, idx) {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
-    const fullStamp = `${dateStr}, ${timeStr}`;
-
-    spinHistory.unshift({ label: c.label, color: c.color, time: fullStamp });
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory.slice(0, 20)));
+function finishSpin() {
+    spinning = false;
+    document.getElementById('spinBtn').disabled = false;
+    const n = wheelCuisines.length;
+    const normalized = (currentAngle % (2 * Math.PI));
+    const segment = (2 * Math.PI - normalized) % (2 * Math.PI);
+    const index = Math.floor(segment / (2 * Math.PI / n));
+    const result = wheelCuisines[index];
+    
+    document.getElementById('wheelResult').innerHTML = `
+        <div class="cuisine-name" style="color:${result.color}">${result.label}</div>
+        <div class="cuisine-sub">sounds like a plan</div>
+    `;
+    
+    spinHistory.unshift({ label: result.label, color: result.color, date: new Date().toLocaleTimeString() });
+    if (spinHistory.length > 20) spinHistory.pop();
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory));
     renderHistory();
-    document.getElementById('wheelResult').innerHTML = `<div class="cuisine-name" style="color:${c.color}">${c.label}</div><div class="cuisine-sub">fate has spoken</div>`;
-    document.getElementById('resultActions').innerHTML = `<button class="btn btn-danger" style="font-size:10px;padding:5px 10px;" onclick="promptRemove(${idx})">Remove from wheel</button>`;
 }
 
-// --- 8. Management & Modals ---
 function renderHistory() {
-    const el = document.getElementById('historyList');
-    if(el) el.innerHTML = spinHistory.map(h => `
-        <div class="history-item"><span style="color:${h.color}">${h.label}</span><span class="history-time">${h.time}</span></div>
-    `).join('') || '<span class="history-empty">no spins</span>';
+    const list = document.getElementById('historyList');
+    if (!list) return;
+    list.innerHTML = spinHistory.length 
+        ? spinHistory.map(h => `<div class="history-item"><span class="h-dot" style="background:${h.color}"></span><b>${h.label}</b> <span style="float:right; opacity:0.5">${h.date}</span></div>`).join('')
+        : '<span class="history-empty">no spins yet</span>';
 }
 
-function clearHistory() { spinHistory = []; localStorage.removeItem(HISTORY_KEY); renderHistory(); }
+function clearHistory() { spinHistory = []; localStorage.setItem(HISTORY_KEY, '[]'); renderHistory(); }
 
 function toggleEdit() {
+    const editPanel = document.getElementById('cuisineEditPanel');
+    const viewList = document.getElementById('cuisineViewList');
     editMode = !editMode;
-    document.getElementById('cuisineViewList').style.display = editMode ? 'none' : 'block';
-    document.getElementById('cuisineEditPanel').style.display = editMode ? 'block' : 'none';
+    editPanel.style.display = editMode ? 'block' : 'none';
+    viewList.style.display = editMode ? 'none' : 'block';
 }
 
 function renderCuisineView() {
-    const el = document.getElementById('cuisineViewList');
-    if(el) el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px;">` +
-        wheelCuisines.map(c => `<span style="border:1px solid ${c.color};color:${c.color};font-size:10px;padding:2px 5px;">${c.label}</span>`).join('') + `</div>`;
+    const list = document.getElementById('cuisineViewList');
+    if (list) list.innerHTML = wheelCuisines.map(c => `<div class="cuisine-chip" style="border-left:4px solid ${c.color}">${c.label}</div>`).join('');
 }
 
 function renderCuisineEditList() {
-    const el = document.getElementById('cuisineEditList');
-    if(el) el.innerHTML = wheelCuisines.map((c, i) => `
-        <div class="cuisine-edit-item"><div class="cuisine-color-dot" style="background:${c.color}"></div><span>${c.label}</span><button onclick="removeCuisine(${i})">✕</button></div>
-    `).join('');
+    const list = document.getElementById('cuisineEditList');
+    if (list) list.innerHTML = wheelCuisines.map((c, i) => `
+        <div class="cuisine-edit-item">
+            <span>${c.label}</span>
+            <button onclick="removeCuisine(${i})">×</button>
+        </div>`).join('');
 }
 
 function addCuisine() {
-    const i = document.getElementById('newCuisineInput'), l = i.value.trim();
-    if (!l) return;
-    wheelCuisines.push({ label: l, color: PALETTE[wheelCuisines.length % PALETTE.length] });
-    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
-    i.value = ''; renderWheel(); renderCuisineView(); renderCuisineEditList();
+    const input = document.getElementById('newCuisineInput');
+    const val = input.value.trim();
+    if (val && wheelCuisines.length < 15) {
+        const color = PALETTE[wheelCuisines.length % PALETTE.length];
+        wheelCuisines.push({ label: val, color });
+        localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
+        input.value = '';
+        renderCuisineEditList(); renderWheel(); renderCuisineView();
+    }
 }
 
 function removeCuisine(i) {
     wheelCuisines.splice(i, 1);
     localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
-    renderWheel(); renderCuisineView(); renderCuisineEditList();
+    renderCuisineEditList(); renderWheel(); renderCuisineView();
 }
 
-function promptRemove(i) {
-    pendingRemove = i;
-    document.getElementById('removeModalText').textContent = `Remove ${wheelCuisines[i].label}?`;
-    document.getElementById('removeModal').classList.add('show');
-    const confirmBtn = document.querySelector('#removeModal .btn-danger');
-    confirmBtn.onclick = confirmRemove;
-}
-
-function confirmRemove() {
-    wheelCuisines.splice(pendingRemove, 1);
-    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
-    closeModal(); renderWheel();
-    document.getElementById('wheelResult').innerHTML = '<div class="cuisine-sub">removed</div>';
-}
-
-function closeModal() { document.getElementById('removeModal').classList.remove('show'); }
-
-function showToast(m) {
-    const t = document.getElementById('toast');
-    if(!t) return;
-    t.textContent = m; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-// --- 9. Global Init ---
-window.onload = () => {
-    syncWithFirebase();
-    renderWheel();
-};
-
-// --- Delete Review ---
-async function promptDeleteReview(id) {
-    if (confirm("Permanently delete this review from the cloud?")) {
-        try {
-            await db.collection('reviews').doc(id).delete();
-            showToast('Review deleted');
-        } catch (e) {
-            showToast('Delete failed');
-        }
-    }
-}
-
-// --- Edit Functions ---
+// --- 8. Edit & Image Viewer Logic ---
 function openEditModal(id) {
-    currentEditId = id;
-    const r = reviews.find(review => review.id === id);
+    const r = reviews.find(x => x.id === id);
     if (!r) return;
-
-    document.getElementById('edit-name').value = r.name || "";
-    document.getElementById('edit-cuisine').value = r.cuisine || "";
-    document.getElementById('edit-review').value = r.text || "";
-
-    // Parse the stored location string back into parts for the modal
-    const locString = r.loc || "";
-    let town = "", region = "Central", link = "";
-
-    if (locString.includes(' (')) {
-        town = locString.split(' (')[0];
-        const remainder = locString.split(' (')[1];
-        region = remainder.split(')')[0];
-        if (remainder.includes(' — ')) {
-            link = remainder.split(' — ')[1];
-        }
-    } else {
-        town = locString;
-    }
-
-    document.getElementById('edit-town').value = town;
-    document.getElementById('edit-region').value = region;
-    document.getElementById('edit-link').value = link;
-
-    const rating = r.rating || 7.0;
-    const editSlider = document.getElementById('edit-rating-slider');
-    const editDisplay = document.getElementById('edit-rating-display');
+    currentEditId = id;
+    document.getElementById('edit-name').value = r.name;
+    document.getElementById('edit-cuisine').value = r.cuisine;
+    document.getElementById('edit-review').value = r.text;
+    document.getElementById('edit-rating-slider').value = r.rating;
     
-    if (editSlider && editDisplay) {
-        editSlider.value = rating;
-        editSlider.oninput = () => {
-            const v = parseFloat(editSlider.value).toFixed(1);
-            const newColor = getDynamicColor(v);
-            editDisplay.textContent = v;
-            editDisplay.style.color = newColor;
-            editSlider.style.accentColor = newColor;
-        };
-        editSlider.oninput();
+    let region = "", town = "", link = "";
+    if (r.loc.includes(' — ')) {
+        const parts = r.loc.split(' — ');
+        link = parts[1];
+        const locParts = parts[0].split(' (');
+        town = locParts[0];
+        region = locParts[1].replace(')', '');
+    } else {
+        const locParts = r.loc.split(' (');
+        town = locParts[0];
+        region = locParts[1].replace(')', '');
     }
-
-    const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-    window.tempEditImages = [...images]; 
-    renderEditImages();
+    
+    document.getElementById('edit-region').value = region;
+    document.getElementById('edit-town').value = town;
+    document.getElementById('edit-link').value = link;
     
     document.getElementById('editModal').classList.add('show');
 }
 
-function renderEditImages() {
-    const container = document.getElementById('edit-image-preview-container');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    window.tempEditImages.forEach((imgSrc, i) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'edit-img-wrapper';
-        wrapper.innerHTML = `
-            <img src="${imgSrc}">
-            <button type="button" class="remove-img-btn" onclick="removeImageFromEdit(${i})">✕</button>
-        `;
-        container.appendChild(wrapper);
-    });
-}
-
-function removeImageFromEdit(index) {
-    window.tempEditImages.splice(index, 1);
-    renderEditImages();
-}
-
-function closeEditModal() {
-    document.getElementById('editModal').classList.remove('show');
-}
+function closeEditModal() { document.getElementById('editModal').classList.remove('show'); }
 
 async function saveEdit() {
-    if (!currentEditId) return;
-    showToast('Saving...');
-    
     const region = document.getElementById('edit-region').value;
-    const town = document.getElementById('edit-town').value.trim();
-    const link = document.getElementById('edit-link').value.trim();
-
-    // Combine manual fields into the loc string
+    const town = document.getElementById('edit-town').value;
+    const link = document.getElementById('edit-link').value;
     const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
 
-    const fileInput = document.getElementById('edit-img-input');
-    const newFiles = fileInput ? fileInput.files : [];
-    let uploadedImages = [];
+    const update = {
+        name: document.getElementById('edit-name').value.trim(),
+        loc: loc,
+        cuisine: document.getElementById('edit-cuisine').value.trim(),
+        text: document.getElementById('edit-review').value.trim(),
+        rating: parseFloat(document.getElementById('edit-rating-slider').value)
+    };
 
-    try {
-        if (newFiles.length > 0) {
-            for (let file of newFiles) {
-                const compressed = await resizeImage(file);
-                uploadedImages.push(compressed);
-            }
-        }
-
-        const update = {
-            name: document.getElementById('edit-name').value.trim(),
-            loc: loc,
-            cuisine: document.getElementById('edit-cuisine').value.trim(),
-            text: document.getElementById('edit-review').value.trim(),
-            rating: parseFloat(document.getElementById('edit-rating-slider').value),
-            img: [...(window.tempEditImages || []), ...uploadedImages]
-        };
-
-        await db.collection('reviews').doc(currentEditId).update(update);
-        showToast('Updated successfully');
-        closeEditModal();
-    } catch (e) {
-        showToast('Update failed');
-    }
+    await db.collection('reviews').doc(currentEditId).update(update);
+    showToast('Updated successfully');
+    closeEditModal();
 }
 
-// --- Image Viewer Logic ---
 function openImageViewer(src) {
     const modal = document.getElementById('imageViewerModal');
     const fullImg = document.getElementById('fullSizeImage');
@@ -496,7 +379,16 @@ function openImageViewer(src) {
     }
 }
 
-function closeImageViewer() {
-    const modal = document.getElementById('imageViewerModal');
-    if (modal) modal.classList.remove('show');
+function closeImageViewer() { document.getElementById('imageViewerModal').classList.remove('show'); }
+
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast show';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2500);
+}
+
+// Start Sync
+syncWithFirebase();
 }
