@@ -94,24 +94,11 @@
             <div class="form-grid">
                 <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
                 <div class="form-row">
-                    <label>Region</label>
-                    <select id="inp-region">
-                        <option value="North">North</option>
-                        <option value="South">South</option>
-                        <option value="East">East</option>
-                        <option value="West">West</option>
-                        <option value="Central">Central</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-grid">
-                <div class="form-row">
-                    <label>Town / Area</label>
-                    <input type="text" id="inp-loc" placeholder="e.g. Toa Payoh">
-                </div>
-                <div class="form-row">
-                    <label>Maps Link (Optional)</label>
-                    <input type="url" id="inp-maps-link" placeholder="https://goo.gl/maps/...">
+                    <label>Location</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="inp-loc" placeholder="e.g. Toa Payoh" style="flex:1;">
+                        <button type="button" class="btn" style="padding: 0 15px;" onclick="openMapModal('inp-loc')">📍</button>
+                    </div>
                 </div>
             </div>
             <div class="form-grid">
@@ -154,25 +141,12 @@
         <div class="modal" style="width: 500px; max-width: 95vw;">
             <h3>Edit Review</h3>
             <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
-            <div class="form-grid">
-                <div class="form-row">
-                    <label>Region</label>
-                    <select id="edit-region">
-                        <option value="North">North</option>
-                        <option value="South">South</option>
-                        <option value="East">East</option>
-                        <option value="West">West</option>
-                        <option value="Central">Central</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label>Town / Area</label>
-                    <input type="text" id="edit-loc">
-                </div>
-            </div>
             <div class="form-row">
-                <label>Maps Link</label>
-                <input type="url" id="edit-maps-link">
+                <label>Location</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="edit-loc" style="flex:1;">
+                    <button type="button" class="btn" style="padding: 0 15px;" onclick="openMapModal('edit-loc')">📍</button>
+                </div>
             </div>
             <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
             <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
@@ -225,5 +199,21 @@
             <img id="fullSizeImage" src="" alt="Full size review">
         </div>
     </div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+
+    <div class="modal-bg" id="mapModal">
+        <div class="modal" style="width: 500px; max-width: 95vw;">
+            <h3>Select Location</h3>
+            <input type="text" id="map-search" class="modal-input" placeholder="Search for a restaurant or place..." style="width:100%; margin-bottom:10px; padding:8px; background:#1e1e1e; border:1px solid #3a3a3a; color:white;">
+            <div id="googleMap" style="width: 100%; height: 300px; margin: 10px 0; background: #333;"></div>
+            <div class="modal-btns">
+                <button class="btn" onclick="confirmMapLocation()">Confirm</button>
+                <button class="btn btn-ghost" onclick="closeMapModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
 </body>
 </html>
+
