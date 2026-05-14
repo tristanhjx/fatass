@@ -240,3 +240,13 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 .btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);}
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--teal);color:#fff;font-family:var(--font);font-size:12px;letter-spacing:1px;padding:.75rem 1.5rem;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:999;}
 .toast.show{opacity:1;transform:translateY(0);}
+
+.pac-container {
+    z-index: 10000 !important; /* Ensure Google search suggestions stay on top of the modal */
+    background-color: var(--bg2);
+    border: 1px solid var(--border);
+    font-family: var(--font);
+}
+.pac-item { border-top: 1px solid var(--border); color: var(--text); }
+.pac-item:hover { background-color: var(--bg3); }
+.pac-item-query { color: var(--orange); }
