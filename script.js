@@ -248,8 +248,11 @@ function spinWheel() {
 
 function showSpinResult(c, idx) {
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-SG', { hour: '2-digit', minute: '2-digit' });
-    spinHistory.unshift({ label: c.label, color: c.color, time: timeStr });
+    const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+    const fullStamp = `${dateStr}, ${timeStr}`;
+
+    spinHistory.unshift({ label: c.label, color: c.color, time: fullStamp });
     localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory.slice(0, 20)));
     renderHistory();
     document.getElementById('wheelResult').innerHTML = `<div class="cuisine-name" style="color:${c.color}">${c.label}</div><div class="cuisine-sub">fate has spoken</div>`;
@@ -303,6 +306,9 @@ function promptRemove(i) {
     pendingRemove = i;
     document.getElementById('removeModalText').textContent = `Remove ${wheelCuisines[i].label}?`;
     document.getElementById('removeModal').classList.add('show');
+    // Point confirm button to wheel logic
+    const confirmBtn = document.querySelector('#removeModal .btn-danger');
+    confirmBtn.onclick = confirmRemove;
 }
 
 function confirmRemove() {
@@ -328,25 +334,16 @@ window.onload = () => {
 };
 
 let currentEditId = null;
-let currentDeleteId = null;
 
-// --- Delete Functions ---
-function promptDeleteReview(id) {
-    currentDeleteId = id;
-    document.getElementById('removeModalText').textContent = "This will permanently delete this review from the cloud.";
-    document.getElementById('removeModal').classList.add('show');
-    // Temporarily point the "Confirm" button to a different function
-    const confirmBtn = document.querySelector('#removeModal .btn-danger');
-    confirmBtn.onclick = confirmDeleteReview;
-}
-
-async function confirmDeleteReview() {
-    try {
-        await db.collection('reviews').doc(currentDeleteId).delete();
-        showToast('Review deleted');
-        closeModal();
-    } catch (e) {
-        showToast('Delete failed');
+// --- Delete Review ---
+async function promptDeleteReview(id) {
+    if (confirm("Permanently delete this review from the cloud?")) {
+        try {
+            await db.collection('reviews').doc(id).delete();
+            showToast('Review deleted');
+        } catch (e) {
+            showToast('Delete failed');
+        }
     }
 }
 
