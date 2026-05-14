@@ -160,6 +160,16 @@ function renderReviews() {
     grid.innerHTML = reviews.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
+        // --- Link Logic Fix ---
+        let displayLoc = r.loc || "";
+        if (displayLoc.includes(' — ')) {
+            const parts = displayLoc.split(' — ');
+            const textPart = parts[0];
+            const urlPart = parts[1];
+            // Format as: "Town (Region) • Map" (where Map is the link)
+            displayLoc = `${textPart} • <a href="${urlPart}" target="_blank" style="color:var(--teal); text-decoration:underline;">Map</a>`;
+        }
+
         return `
         <div class="rest-card">
             <div class="card-actions">
@@ -167,7 +177,7 @@ function renderReviews() {
             </div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
-            <div class="location">📍 ${r.loc}</div>
+            <div class="location">📍 ${displayLoc}</div>
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
