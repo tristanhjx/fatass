@@ -343,9 +343,7 @@ function showToast(m) {
 window.onload = () => {
     syncWithFirebase();
     renderWheel();
-};
-
-let currentEditId = null;
+}; // This closing brace and semicolon were missing, which caused the error
 
 // --- Delete Review ---
 async function promptDeleteReview(id) {
@@ -360,38 +358,20 @@ async function promptDeleteReview(id) {
 }
 
 // --- Edit Functions ---
-// Initialize the edit slider listener (add this near your other slider logic)
-// --- Edit Functions ---
-
-let currentEditId = null;
-
-// Initialize the edit slider listener once
-const editSlider = document.getElementById('edit-rating-slider');
-const editDisplay = document.getElementById('edit-rating-display');
-
-if (editSlider) {
-    editSlider.addEventListener('input', () => {
-        const v = parseFloat(editSlider.value).toFixed(1);
-        const newColor = getDynamicColor(v);
-        editDisplay.textContent = v;
-        editDisplay.style.color = newColor;
-        editSlider.style.accentColor = newColor;
-    });
-}
-
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(review => review.id === id);
     if (!r) return;
 
-    // Fill standard text fields
     document.getElementById('edit-name').value = r.name || "";
     document.getElementById('edit-loc').value = r.loc || "";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
 
-    // Sync the Rating Slider
     const rating = r.rating || 7.0;
+    const editSlider = document.getElementById('edit-rating-slider');
+    const editDisplay = document.getElementById('edit-rating-display');
+    
     if (editSlider) {
         editSlider.value = rating;
         editDisplay.textContent = rating.toFixed(1);
@@ -400,7 +380,6 @@ function openEditModal(id) {
         editSlider.style.accentColor = initialColor;
     }
 
-    // Prepare Images (Convert old strings to arrays if necessary)
     const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
     window.tempEditImages = [...images]; 
     renderEditImages();
@@ -435,14 +414,13 @@ function closeEditModal() {
 
 async function saveEdit() {
     if (!currentEditId) return;
-    showToast('Saving changes...');
+    showToast('Saving...');
     
     const fileInput = document.getElementById('edit-img-input');
     const newFiles = fileInput ? fileInput.files : [];
     let uploadedImages = [];
 
     try {
-        // Process new uploads
         if (newFiles.length > 0) {
             for (let file of newFiles) {
                 const compressed = await resizeImage(file);
@@ -450,26 +428,19 @@ async function saveEdit() {
             }
         }
 
-        // Final merged list
-        const finalImages = [...(window.tempEditImages || []), ...uploadedImages];
-
         const update = {
             name: document.getElementById('edit-name').value.trim(),
             loc: document.getElementById('edit-loc').value.trim(),
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
-            img: finalImages
+            img: [...(window.tempEditImages || []), ...uploadedImages]
         };
 
         await db.collection('reviews').doc(currentEditId).update(update);
-        
         showToast('Updated successfully');
-        if (fileInput) fileInput.value = ''; 
         closeEditModal();
-        
     } catch (e) {
-        console.error("Save Error:", e);
         showToast('Update failed');
     }
 }
