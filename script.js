@@ -178,7 +178,7 @@ function renderReviews() {
         return `
         <div class="rest-card">
             <div class="card-actions">
-                <button class="action-icon" onclick="openEditModal('${r.id}')" title="Edit">✏️</button>
+                <button class="action-icon edit-btn" onclick="openEditModal('${r.id}')" title="Edit">✏️</button>
                 <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')" title="Delete">🗑️</button>
             </div>
             
