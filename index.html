@@ -132,18 +132,25 @@
     </div>
 
     <div class="modal-bg" id="editModal">
-    <div class="modal" style="width: 500px; max-width: 95vw;">
-        <h3>Edit Review</h3>
-        <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
-        <div class="form-row"><label>Location</label><input type="text" id="edit-loc"></div>
-        <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
-        <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
-        <div class="modal-btns">
-            <button class="btn" onclick="saveEdit()">Save Changes</button>
-            <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+        <div class="modal" style="width: 500px; max-width: 95vw;">
+            <h3>Edit Review</h3>
+            <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
+            <div class="form-row"><label>Location</label><input type="text" id="edit-loc"></div>
+            <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
+            <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
+            
+            <div class="form-row">
+                <label>Manage Photos</label>
+                <div id="edit-image-preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
+                <input type="file" id="edit-img-input" accept="image/*" multiple>
+            </div>
+    
+            <div class="modal-btns">
+                <button class="btn" onclick="saveEdit()">Save Changes</button>
+                <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+            </div>
         </div>
     </div>
-</div>
 
     <div class="toast" id="toast"></div>
 
