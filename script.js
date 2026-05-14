@@ -360,11 +360,56 @@ async function promptDeleteReview(id) {
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(review => review.id === id);
+    
+    // Fill text fields
     document.getElementById('edit-name').value = r.name;
     document.getElementById('edit-loc').value = r.loc;
     document.getElementById('edit-cuisine').value = r.cuisine;
     document.getElementById('edit-review').value = r.text;
+
+    // Handle Image Previews
+    const container = document.getElementById('edit-image-preview-container');
+    container.innerHTML = '';
+    
+    // Normalize images to an array (handles legacy single-string data)
+    const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
+    
+    images.forEach((imgSrc, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'edit-img-wrapper';
+        wrapper.innerHTML = `
+            <img src="${imgSrc}">
+            <button class="remove-img-btn" onclick="removeImageFromEdit(${index})">✕</button>
+        `;
+        container.appendChild(wrapper);
+    });
+
+    // Store the current images temporarily for editing
+    window.tempEditImages = [...images];
+    
     document.getElementById('editModal').classList.add('show');
+}
+
+// Function to remove a specific image from the preview list
+function removeImageFromEdit(index) {
+    window.tempEditImages.splice(index, 1);
+    // Refresh the preview
+    const container = document.getElementById('edit-image-preview-container');
+    const wrappers = container.querySelectorAll('.edit-img-wrapper');
+    if (wrappers[index]) wrappers[index].remove();
+    
+    // Re-render to ensure indices stay synced
+    const images = [...window.tempEditImages];
+    container.innerHTML = '';
+    images.forEach((imgSrc, i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'edit-img-wrapper';
+        wrapper.innerHTML = `
+            <img src="${imgSrc}">
+            <button class="remove-img-btn" onclick="removeImageFromEdit(${i})">✕</button>
+        `;
+        container.appendChild(wrapper);
+    });
 }
 
 function closeEditModal() {
@@ -372,18 +417,37 @@ function closeEditModal() {
 }
 
 async function saveEdit() {
+    showToast('Saving changes...');
+    
+    const newFiles = document.getElementById('edit-img-input').files;
+    let uploadedImages = [];
+
+    // Process new images if any
+    if (newFiles.length > 0) {
+        for (let file of newFiles) {
+            const compressed = await resizeImage(file);
+            uploadedImages.push(compressed);
+        }
+    }
+
+    // Merge kept images + new uploads
+    const finalImages = [...window.tempEditImages, ...uploadedImages];
+
     const update = {
         name: document.getElementById('edit-name').value,
         loc: document.getElementById('edit-loc').value,
         cuisine: document.getElementById('edit-cuisine').value,
-        text: document.getElementById('edit-review').value
+        text: document.getElementById('edit-review').value,
+        img: finalImages // Update the image field with the new array
     };
 
     try {
         await db.collection('reviews').doc(currentEditId).update(update);
         showToast('Updated successfully');
+        document.getElementById('edit-img-input').value = ''; // Clear input
         closeEditModal();
     } catch (e) {
         showToast('Update failed');
+        console.error(e);
     }
 }
