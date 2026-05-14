@@ -152,14 +152,25 @@ async function submitReview() {
 
 function renderReviews() {
     const grid = document.getElementById('restGrid');
+    const regionFilter = document.getElementById('filter-region').value;
     if (!grid) return;
-    if (reviews.length === 0) {
-        grid.innerHTML = '<p class="history-empty">No reviews yet.</p>';
+
+    let filtered = reviews;
+    if (regionFilter !== 'All') {
+        filtered = reviews.filter(r => r.region === regionFilter);
+    }
+
+    if (filtered.length === 0) {
+        grid.innerHTML = '<p class="history-empty">No reviews in this region.</p>';
         return;
     }
-    grid.innerHTML = reviews.map(r => {
-        // Handle both old single-image data and new array data
+
+    grid.innerHTML = filtered.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
+        // Create link for location if it exists
+        const locHTML = r.mapsLink 
+            ? `<a href="${r.mapsLink}" target="_blank" class="location" style="text-decoration:none; color:var(--teal);">📍 ${r.loc} (${r.region || 'N/A'})</a>`
+            : `<div class="location">📍 ${r.loc} (${r.region || 'N/A'})</div>`;
         
         return `
         <div class="rest-card">
@@ -168,20 +179,14 @@ function renderReviews() {
             </div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
-            <div class="location">📍 ${r.loc}</div>
+            ${locHTML}
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
             <div class="snippet">${r.text}</div>
-            
             <div class="image-gallery">
-                ${images.map(imgSrc => `
-                    <img src="${imgSrc}" 
-                         class="review-img-thumb" 
-                         onclick="openImageViewer('${imgSrc}')">
-                `).join('')}
+                ${images.map(imgSrc => `<img src="${imgSrc}" class="review-img-thumb" onclick="openImageViewer('${imgSrc}')">`).join('')}
             </div>
-            
             <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
         </div>`;
     }).join('');
@@ -372,6 +377,8 @@ function openEditModal(id) {
     document.getElementById('edit-loc').value = r.loc || "";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
+    document.getElementById('edit-maps-link').value = r.mapsLink || "";
+    document.getElementById('edit-region').value = r.region || "Central";
 
     const rating = r.rating || 7.0;
     const editSlider = document.getElementById('edit-rating-slider');
@@ -447,6 +454,8 @@ async function saveEdit() {
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
+            mapsLink: document.getElementById('edit-maps-link').value.trim(),
+            region: document.getElementById('edit-region').value,
             img: [...(window.tempEditImages || []), ...uploadedImages]
         };
 
