@@ -14,7 +14,7 @@
 /* --- 2. Update the .rating-val style --- */
 .rating-val {
     font-weight: bold;
-    font-size: 14px;
+    font-size: 24px;
     margin-bottom: .5rem;
     /* REMOVED: color: ... any static color here */
     /* JavaScript will now inject the color directly into the 'style' attribute */
