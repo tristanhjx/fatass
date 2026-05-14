@@ -93,12 +93,22 @@
         <div class="form-card">
             <div class="form-grid">
                 <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
+                
                 <div class="form-row">
-                    <label>Location</label>
-                    <div class="location-input-group">
-                        <input type="text" id="inp-loc" placeholder="Select on map..." readonly onclick="openMapModal('add')">
-                        <button class="map-btn" onclick="openMapModal('add')">📍</button>
+                    <label>Location Details</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <select id="inp-region" style="width:100%;">
+                            <option value="" disabled selected>Region</option>
+                            <option value="Central">Central</option>
+                            <option value="North">North</option>
+                            <option value="North-East">North-East</option>
+                            <option value="East">East</option>
+                            <option value="West">West</option>
+                        </select>
+                        <input type="text" id="inp-town" placeholder="Town/Area (e.g. Toa Payoh)">
                     </div>
+                    <input type="url" id="inp-link" placeholder="Paste link (Google Maps, IG, etc.)">
+                    <input type="hidden" id="inp-loc">
                 </div>
             </div>
     
@@ -109,25 +119,11 @@
                     <datalist id="list-cuisines"></datalist>
                 </div>
                 <div class="form-row">
-                    <label>Region</label>
-                    <select id="inp-region">
-                        <option value="" disabled selected>Select Region</option>
-                        <option value="Central">Central</option>
-                        <option value="North">North</option>
-                        <option value="North-East">North-East</option>
-                        <option value="East">East</option>
-                        <option value="West">West</option>
-                    </select>
+                    <label>Your name</label>
+                    <input list="list-authors" id="inp-author" placeholder="Wei Jie">
+                    <datalist id="list-authors"></datalist>
                 </div>
             </div>
-
-            <div class="form-row">
-                <label>Your name</label>
-                <select id="inp-author">
-                    <option value="" disabled selected>Select Name</option>
-                </select>
-            </div>
-
             <div class="form-row">
                 <label>Rating (0.0 - 10.0)</label>
                 <div class="slider-container">
@@ -156,18 +152,10 @@
         <div class="modal" style="width: 500px; max-width: 95vw;">
             <h3>Edit Review</h3>
             <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
+            
             <div class="form-row">
-                <label>Location</label>
-                <div class="location-input-group">
-                    <input type="text" id="edit-loc" readonly onclick="openMapModal('edit')">
-                    <button class="map-btn" onclick="openMapModal('edit')">📍</button>
-                </div>
-            </div>
-    
-            <div class="form-grid">
-                <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
-                <div class="form-row">
-                    <label>Region</label>
+                <label>Location Details</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <select id="edit-region">
                         <option value="Central">Central</option>
                         <option value="North">North</option>
@@ -175,16 +163,13 @@
                         <option value="East">East</option>
                         <option value="West">West</option>
                     </select>
+                    <input type="text" id="edit-town" placeholder="Town/Area">
                 </div>
+                <input type="url" id="edit-link" placeholder="Link (Google Maps, IG, etc.)">
+                <input type="hidden" id="edit-loc">
             </div>
-
-            <div class="form-row">
-                <label>Your name</label>
-                <select id="edit-author">
-                    <option value="" disabled selected>Select Name</option>
-                </select>
-            </div>
-
+    
+            <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
             <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
          
             <div class="form-row">
@@ -252,3 +237,4 @@
     
 </body>
 </html>
+
