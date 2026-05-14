@@ -372,13 +372,22 @@ function openEditModal(id) {
     const editSlider = document.getElementById('edit-rating-slider');
     const editDisplay = document.getElementById('edit-rating-display');
     
-    if (editSlider) {
+    if (editSlider && editDisplay) {
         editSlider.value = rating;
-        editDisplay.textContent = rating.toFixed(1);
-        const initialColor = getDynamicColor(rating);
-        editDisplay.style.color = initialColor;
-        editSlider.style.accentColor = initialColor;
+        
+        // Define what happens when you slide
+        editSlider.oninput = () => {
+            const v = parseFloat(editSlider.value).toFixed(1);
+            const newColor = getDynamicColor(v); // Uses your existing math function
+            editDisplay.textContent = v;
+            editDisplay.style.color = newColor;
+            editSlider.style.accentColor = newColor;
+        };
+
+        // Trigger once immediately so it opens with the correct color
+        editSlider.oninput();
     }
+    // --------------------------------------
 
     const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
     window.tempEditImages = [...images]; 
