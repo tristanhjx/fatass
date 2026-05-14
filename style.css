@@ -132,33 +132,47 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 }
 
 /* Action Icons */
+/* Container for the buttons at the top right */
 .card-actions {
     position: absolute;
     top: 10px;
     right: 10px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    z-index: 10; /* Ensures it sits above the card content */
 }
-.rest-card { position: relative; } /* Needed for absolute positioning */
 
+/* Base style for both icons */
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
-    cursor: pointer;
-    padding: 4px;
-    font-size: 12px;
+    color: var(--text);
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer !important; /* Forces cursor to show */
+    font-size: 14px;
+    line-height: 1;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    width: 32px;
+    height: 32px;
 }
-.edit-icon:hover { border-color: #f1c40f; color: #f1c40f; }
-.delete-btn {
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
+
+/* Hover effects */
+.action-icon:hover {
+    background: var(--bg);
+    transform: scale(1.1);
 }
-.delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
+
+.edit-btn:hover {
+    border-color: var(--teal);
+}
+
+.delete-btn:hover {
+    border-color: #ff4444;
+}
 
 /* Multi-image display in cards */
 .image-gallery {
