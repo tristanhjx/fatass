@@ -49,6 +49,7 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
     padding: 1.25rem; 
     transition: border-color .2s, transform .15s; 
     position: relative; 
+    isolation: isolate; /* FIX: Protects the button stacking context */
 }
 .rest-card:hover { border-color: var(--orange); transform: translateY(-2px); }
 
@@ -61,30 +62,29 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .snippet { color: var(--muted); font-size: 11px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .75rem; }
 .review-img { width: 100%; height: 180px; object-fit: cover; margin-top: 1rem; border: 1px solid var(--border); }
 
-/* --- 5. Action Icons (FIXED) --- */
+/* --- 5. Action Icons --- */
 .card-actions {
     position: absolute;
     top: 10px;
     right: 10px;
     display: flex;
     gap: 8px;
-    z-index: 50; /* Above card content */
+    z-index: 10;
 }
 
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
     color: var(--text);
-    cursor: pointer !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    /* SANITY CHECK: Explicit dimensions to fix unclickable edit button */
+    /* FIX: Explicit hitbox to ensure the edit button is clickable */
     width: 28px;
     height: 28px;
     padding: 0;
+    cursor: pointer !important;
     font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 4px;
 }
 
@@ -100,14 +100,12 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
     position: absolute;
     bottom: 15px;
     right: 15px;
-    z-index: 50;
+    z-index: 10;
 }
 .delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
 
-/* Pushes tag away so it doesn't block the Edit button hitbox */
-.rest-card .tag {
-    margin-right: 40px;
-}
+/* Prevents header tags from overlapping button area */
+.rest-card .tag { margin-right: 40px; }
 
 /* --- 6. Spin Wheel & Sidebar --- */
 .spin-layout { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; align-items: start; }
@@ -137,7 +135,7 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .tier-items { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; flex: 1; background: var(--card); }
 .tier-chip { background: var(--bg3); border: 1px solid var(--border); padding: 6px 12px; font-size: 11px; letter-spacing: 1px; }
 
-/* --- 8. Add Review Form (RESTORED TO ORIGINAL STACK) --- */
+/* --- 8. Add Review Form (RESTORED TO ORIGINAL FLOW) --- */
 .form-card { background: var(--card); border: 1px solid var(--border); padding: 2rem; margin-top: 1rem; }
 .form-row { margin-bottom: 1.25rem; }
 .form-row label { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: .4rem; }
