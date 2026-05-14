@@ -467,3 +467,63 @@ function closeImageViewer() {
     const modal = document.getElementById('imageViewerModal');
     if (modal) modal.classList.remove('show');
 }
+
+// gmaps
+let map, autocomplete, marker;
+let activeLocationInputId = ''; // Tracks which field to fill (add or edit)
+
+function openMapModal(inputId) {
+    activeLocationInputId = inputId;
+    document.getElementById('mapModal').classList.add('show');
+    initMap();
+}
+
+function closeMapModal() {
+    document.getElementById('mapModal').classList.remove('show');
+}
+
+function initMap() {
+    const defaultPos = { lat: 1.3521, lng: 103.8198 }; // Default to Singapore
+    
+    map = new google.maps.Map(document.getElementById("googleMap"), {
+        center: defaultPos,
+        zoom: 13,
+        styles: [ { "stylers": [ { "invert_lightness": true }, { "hue": "#ffbb00" }, { "saturation": -100 } ] } ] // Dark Mode Map
+    });
+
+    marker = new google.maps.Marker({
+        map: map,
+        draggable: true,
+        position: defaultPos
+    });
+
+    const input = document.getElementById("map-search");
+    autocomplete = new google.maps.places.Autocomplete(input);
+    autocomplete.bindTo("bounds", map);
+
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+
+        if (place.geometry.viewport) map.fitBounds(place.geometry.viewport);
+        else {
+            map.setCenter(place.geometry.location);
+            map.setZoom(17);
+        }
+        marker.setPosition(place.geometry.location);
+    });
+}
+
+function confirmMapLocation() {
+    const place = autocomplete.getPlace();
+    const targetInput = document.getElementById(activeLocationInputId);
+    
+    if (place && place.formatted_address) {
+        targetInput.value = place.name + ", " + place.formatted_address;
+    } else if (document.getElementById('map-search').value) {
+        targetInput.value = document.getElementById('map-search').value;
+    }
+    
+    closeMapModal();
+    document.getElementById('map-search').value = ''; // Clear search for next time
+}
