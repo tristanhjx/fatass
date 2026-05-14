@@ -62,14 +62,13 @@ function getDynamicColor(value) {
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
+// In script.js, make sure this function exists:
 function getTierColor(v) {
-    if (v >= 9.0) return '#c87941';
-    if (v >= 8.0) return '#4a9d9c';
-    if (v >= 7.0) return '#4a7a9d';
-    if (v >= 6.0) return '#6a6a6a';
-    if (v >= 4.5) return '#3a3a3a';
-    return '#c84a4a';
+    return getDynamicColor(v); // This links it to the slider math
 }
+
+// And verify renderReviews uses it:
+// ... `<div class="rating-val" style="color:${getTierColor(r.rating)}">` ...
 
 if (slider) {
     const updateSlider = () => {
