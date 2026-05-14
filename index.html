@@ -133,6 +133,26 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDQjAiwQf9la93veXb7N_AUzWBjNkWnh4s",
+            authDomain: "fatass-f5c0e.firebaseapp.com",
+            projectId: "fatass-f5c0e",
+            storageBucket: "fatass-f5c0e.firebasestorage.app",
+            messagingSenderId: "248299532819",
+            appId: "1:248299532819:web:15a35c3d084ecfba6105e6",
+            measurementId: "G-PRR74C35TN"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+
     <script src="script.js"></script>
 </body>
 </html>
