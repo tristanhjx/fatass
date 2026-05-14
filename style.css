@@ -6,7 +6,6 @@
     --orange: #c87941; --orange-dim: #a0602e; --teal: #4a9d9c; --teal-dim: #357a79;
     --text: #e8e4dc; --muted: #888; --font: 'Monaco', monospace;
     
-    /* Tier List Colors */
     --color-s: #c87941; --color-a: #4a9d9c; --color-b: #4a7a9d; 
     --color-c: #6a6a6a; --color-d: #3a3a3a; --color-f: #c84a4a;
 }
@@ -22,7 +21,7 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .nav-btn:hover { color: var(--text); }
 .nav-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
 
-/* --- 3. Layouts & Pages --- */
+/* --- 3. Layouts --- */
 .page { display: none; padding: 2rem; max-width: 1100px; margin: 0 auto; }
 .page.active { display: block; }
 
@@ -38,7 +37,6 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .home-nav-btn { background: none; border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: 1rem; cursor: pointer; transition: all .2s; text-align: left; }
 .home-nav-btn:hover { border-color: var(--orange); color: var(--orange); }
 .home-nav-btn .arrow { float: right; color: var(--muted); }
-.home-nav-btn:hover .arrow { color: var(--orange); }
 
 /* --- 4. Review Cards --- */
 .rest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
@@ -49,34 +47,33 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
     padding: 1.25rem; 
     transition: border-color .2s, transform .15s; 
     position: relative; 
-    isolation: isolate; /* FIX: Protects the button stacking context */
+    isolation: isolate; /* Ensures children z-index works correctly */
 }
 .rest-card:hover { border-color: var(--orange); transform: translateY(-2px); }
 
-.rest-card .tag { display: inline-block; background: var(--bg3); color: var(--teal); font-size: 10px; letter-spacing: 2px; padding: 3px 8px; text-transform: uppercase; margin-bottom: .75rem; }
+.rest-card .tag { display: inline-block; background: var(--bg3); color: var(--teal); font-size: 10px; letter-spacing: 2px; padding: 3px 8px; text-transform: uppercase; margin-bottom: .75rem; margin-right: 40px; }
 .rest-card h3 { font-size: 15px; color: var(--text); margin-bottom: .4rem; letter-spacing: 1px; padding-right: 40px; }
 .rest-card .location { color: var(--muted); font-size: 11px; margin-bottom: .75rem; }
 
 .rating-val { font-weight: bold; font-size: 14px; margin-bottom: .5rem; }
-.review-count { color: var(--muted); font-size: 10px; margin-left: 6px; vertical-align: 1px; }
 .snippet { color: var(--muted); font-size: 11px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .75rem; }
 .review-img { width: 100%; height: 180px; object-fit: cover; margin-top: 1rem; border: 1px solid var(--border); }
 
-/* --- 5. Action Icons --- */
+/* --- 5. Action Icons (THE FIX) --- */
 .card-actions {
     position: absolute;
     top: 10px;
     right: 10px;
     display: flex;
     gap: 8px;
-    z-index: 10;
+    z-index: 50;
 }
 
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
     color: var(--text);
-    /* FIX: Explicit hitbox to ensure the edit button is clickable */
+    /* Essential: width/height ensures the button is clickable */
     width: 28px;
     height: 28px;
     padding: 0;
@@ -86,26 +83,19 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
     align-items: center;
     justify-content: center;
     border-radius: 4px;
+    pointer-events: auto; /* Force clickability */
 }
 
-.action-icon:hover {
-    background: var(--bg);
-    transform: scale(1.1);
-}
-
+.action-icon:hover { background: var(--bg); transform: scale(1.1); }
 .edit-btn:hover { border-color: #f1c40f; color: #f1c40f; }
 
-/* TRASHCAN: Restored to bottom-right exactly as original */
 .delete-btn {
     position: absolute;
     bottom: 15px;
     right: 15px;
-    z-index: 10;
+    z-index: 50;
 }
 .delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
-
-/* Prevents header tags from overlapping button area */
-.rest-card .tag { margin-right: 40px; }
 
 /* --- 6. Spin Wheel & Sidebar --- */
 .spin-layout { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; align-items: start; }
@@ -115,17 +105,14 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 #wheelCanvas { border: 2px solid var(--border); display: block; max-width: 100%; }
 .wheel-result { margin-top: 1.25rem; text-align: center; min-height: 56px; }
 .wheel-result .cuisine-name { font-size: 26px; letter-spacing: 3px; text-transform: uppercase; }
-.wheel-result .cuisine-sub { color: var(--muted); font-size: 11px; letter-spacing: 2px; margin-top: .25rem; }
 
 .sidebar-box { background: var(--card); border: 1px solid var(--border); padding: 1rem; }
-.sidebar-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: .75rem; display: flex; justify-content: space-between; align-items: center; }
 .history-list, .cuisine-edit-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
 .history-item, .cuisine-edit-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: var(--bg3); }
 
 /* --- 7. Tier List --- */
 .tier-row { display: flex; min-height: 70px; border: 1px solid var(--border); margin-bottom: 4px; }
-.tier-label { width: 70px; min-width: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; border-right: 1px solid var(--border); line-height: 1.1; }
-.tier-range { font-size: 9px; font-weight: normal; opacity: 0.8; margin-top: 3px; }
+.tier-label { width: 70px; min-width: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; border-right: 1px solid var(--border); }
 .tier-s .tier-label { background: var(--color-s); color: #fff; }
 .tier-a .tier-label { background: var(--color-a); color: #fff; }
 .tier-b .tier-label { background: var(--color-b); color: #fff; }
@@ -133,7 +120,7 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .tier-d .tier-label { background: var(--color-d); color: var(--muted); }
 .tier-f .tier-label { background: #1e1010; color: var(--color-f); }
 .tier-items { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; flex: 1; background: var(--card); }
-.tier-chip { background: var(--bg3); border: 1px solid var(--border); padding: 6px 12px; font-size: 11px; letter-spacing: 1px; }
+.tier-chip { background: var(--bg3); border: 1px solid var(--border); padding: 6px 12px; font-size: 11px; }
 
 /* --- 8. Add Review Form (RESTORED TO ORIGINAL FLOW) --- */
 .form-card { background: var(--card); border: 1px solid var(--border); padding: 2rem; margin-top: 1rem; }
@@ -147,12 +134,10 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 
 /* --- 9. Multi-Image & Viewer --- */
 .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 10px; }
-.review-img-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--border); cursor: pointer; transition: opacity 0.2s; }
-.review-img-thumb:hover { opacity: 0.8; }
+.review-img-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--border); cursor: pointer; }
 
-#fullSizeImage { max-width: 100%; max-height: 90vh; border: 2px solid var(--orange); box-shadow: 0 0 20px rgba(0,0,0,0.5); object-fit: contain; }
+#fullSizeImage { max-width: 100%; max-height: 90vh; border: 2px solid var(--orange); object-fit: contain; }
 
-/* Edit Modal Image Management */
 .edit-img-wrapper { position: relative; width: 80px; height: 80px; }
 .edit-img-wrapper img { width: 100%; height: 100%; object-fit: cover; border: 1px solid var(--orange); }
 .remove-img-btn { position: absolute; top: -5px; right: -5px; background: #c84a4a; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -167,5 +152,5 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .btn-danger { background: none; border: 1px solid #c84a4a; color: #c84a4a; }
 .btn-ghost { background: none; border: 1px solid var(--border); color: var(--muted); }
 
-.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--teal); color: #fff; font-family: var(--font); font-size: 12px; letter-spacing: 1px; padding: .75rem 1.5rem; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; z-index: 999; }
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--teal); color: #fff; font-family: var(--font); font-size: 12px; padding: .75rem 1.5rem; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; z-index: 999; }
 .toast.show { opacity: 1; transform: translateY(0); }
