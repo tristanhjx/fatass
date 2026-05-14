@@ -61,49 +61,36 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .snippet { color: var(--muted); font-size: 11px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .75rem; }
 .review-img { width: 100%; height: 180px; object-fit: cover; margin-top: 1rem; border: 1px solid var(--border); }
 
-/* --- Action Icons Fix --- */
+/* --- Action Icons --- */
 .card-actions {
     position: absolute;
     top: 10px;
     right: 10px;
     display: flex;
     gap: 8px;
-    z-index: 100; /* High z-index to stay above the card body */
+    z-index: 10; /* Ensures the top buttons stay above the card text */
 }
+
+.rest-card { position: relative; } 
 
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
-    color: var(--text);
-    cursor: pointer !important; /* Force pointer to show it's clickable */
-    font-size: 14px;
+    cursor: pointer !important;
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    /* Added explicit dimensions so the clickable area isn't zero */
-    width: 30px;
-    height: 30px;
-    border-radius: 4px;
-    pointer-events: auto; /* Ensures it intercepts the click */
+    /* FIX: Added width/height so the Edit button is actually clickable */
+    width: 28px;
+    height: 28px;
+    padding: 0;
 }
 
-/* Specific Edit Button Hover */
-.edit-btn:hover { 
-    border-color: #f1c40f; 
-    color: #f1c40f; 
-    background: var(--bg);
-}
+.edit-icon:hover { border-color: #f1c40f; color: #f1c40f; }
 
-/* Ensure the cuisine tag doesn't overlap the top-right button area */
-.rest-card .tag {
-    max-width: calc(100% - 80px); 
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Trashcan - Left untouched as per your request */
+/* TRASHCAN: Left exactly as your original version requested */
 .delete-btn {
     position: absolute;
     bottom: 15px;
