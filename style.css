@@ -148,6 +148,49 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 }
 .delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
 
+/* Multi-image display in cards */
+.image-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+}
+.review-img-thumb {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border: 1px solid var(--border);
+}
+
+/* Edit Modal Image Management */
+.edit-img-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+.edit-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 1px solid var(--orange);
+}
+.remove-img-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #c84a4a;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Modal & Toast */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
