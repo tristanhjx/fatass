@@ -61,38 +61,54 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .snippet { color: var(--muted); font-size: 11px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .75rem; }
 .review-img { width: 100%; height: 180px; object-fit: cover; margin-top: 1rem; border: 1px solid var(--border); }
 
-/* --- 5. Action Icons (The Fix) --- */
-.card-actions { 
-    position: absolute; 
-    top: 10px; 
-    right: 10px; 
-    display: flex; 
-    gap: 8px; 
-    z-index: 10; 
+/* --- Action Icons Fix --- */
+.card-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+    z-index: 100; /* High z-index to stay above the card body */
 }
 
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
     color: var(--text);
-    cursor: pointer !important;
+    cursor: pointer !important; /* Force pointer to show it's clickable */
     font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    width: 28px;  /* Hitbox size */
-    height: 28px; /* Hitbox size */
+    /* Added explicit dimensions so the clickable area isn't zero */
+    width: 30px;
+    height: 30px;
     border-radius: 4px;
-    padding: 0;
+    pointer-events: auto; /* Ensures it intercepts the click */
 }
-.action-icon:hover { background: var(--bg); transform: scale(1.1); }
 
-/* Edit Icon specifically */
-.edit-btn:hover, .edit-icon:hover { border-color: #f1c40f; color: #f1c40f; }
+/* Specific Edit Button Hover */
+.edit-btn:hover { 
+    border-color: #f1c40f; 
+    color: #f1c40f; 
+    background: var(--bg);
+}
 
-/* Trashcan Icon specifically */
-.delete-btn { position: absolute; bottom: 15px; right: 15px; z-index: 10; width: 28px; height: 28px; }
+/* Ensure the cuisine tag doesn't overlap the top-right button area */
+.rest-card .tag {
+    max-width: calc(100% - 80px); 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Trashcan - Left untouched as per your request */
+.delete-btn {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
 .delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
 
 /* --- 6. Spin Wheel & Sidebar --- */
