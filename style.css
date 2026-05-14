@@ -119,6 +119,35 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     transition: color 0.1s linear;
 }
 
+/* Action Icons */
+.card-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+}
+.rest-card { position: relative; } /* Needed for absolute positioning */
+
+.action-icon {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.edit-icon:hover { border-color: #f1c40f; color: #f1c40f; }
+.delete-btn {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
+.delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
+
 /* Modal & Toast */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
