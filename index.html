@@ -93,14 +93,25 @@
         <div class="form-card">
             <div class="form-grid">
                 <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
+                
                 <div class="form-row">
-                    <label>Location</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" id="inp-loc" placeholder="e.g. Toa Payoh" style="flex:1;">
-                        <button type="button" class="btn" style="padding: 0 15px;" onclick="openMapModal('inp-loc')">📍</button>
+                    <label>Location Details</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <select id="inp-region" style="width:100%;">
+                            <option value="" disabled selected>Region</option>
+                            <option value="Central">Central</option>
+                            <option value="North">North</option>
+                            <option value="North-East">North-East</option>
+                            <option value="East">East</option>
+                            <option value="West">West</option>
+                        </select>
+                        <input type="text" id="inp-town" placeholder="Town/Area (e.g. Toa Payoh)">
                     </div>
+                    <input type="url" id="inp-link" placeholder="Paste link (Google Maps, IG, etc.)">
+                    <input type="hidden" id="inp-loc">
                 </div>
             </div>
+    
             <div class="form-grid">
                 <div class="form-row">
                     <label>Cuisine type</label>
@@ -141,13 +152,23 @@
         <div class="modal" style="width: 500px; max-width: 95vw;">
             <h3>Edit Review</h3>
             <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
+            
             <div class="form-row">
-                <label>Location</label>
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="edit-loc" style="flex:1;">
-                    <button type="button" class="btn" style="padding: 0 15px;" onclick="openMapModal('edit-loc')">📍</button>
+                <label>Location Details</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <select id="edit-region">
+                        <option value="Central">Central</option>
+                        <option value="North">North</option>
+                        <option value="North-East">North-East</option>
+                        <option value="East">East</option>
+                        <option value="West">West</option>
+                    </select>
+                    <input type="text" id="edit-town" placeholder="Town/Area">
                 </div>
+                <input type="url" id="edit-link" placeholder="Link (Google Maps, IG, etc.)">
+                <input type="hidden" id="edit-loc">
             </div>
+    
             <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
             <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
          
