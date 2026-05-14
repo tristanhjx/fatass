@@ -84,9 +84,8 @@ function showPage(id) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     
-    const navMap = { 'home': -1, 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
-    const idx = navMap[id];
-    if (idx !== undefined && idx !== -1) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+    const navMap = { 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
+    if (id in navMap) document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
 
     if (id === 'spin') { renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
 }
@@ -107,23 +106,23 @@ async function submitReview() {
     const region = document.getElementById('inp-region').value;
     const town = document.getElementById('inp-town').value.trim();
     const link = document.getElementById('inp-link').value.trim();
-    
-    // Combine for storage: "Town (Region) — Link"
-    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
-
     const cuisine = document.getElementById('inp-cuisine').value.trim();
     const author = document.getElementById('inp-author').value.trim();
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
 
-    if (!name || !region || !town || !cuisine || !author) return showToast('Fill in all location details!');
+    // Validation update: Ensure name, region, town, cuisine, and author are present
+    if (!name || !region || !town || !cuisine || !author) return showToast('Fill in all required fields!');
 
     let finalImg = "";
     if (imgFile) {
         showToast('Compressing photo...');
         finalImg = await resizeImage(imgFile);
     }
+
+    // Combine manual fields into a single location string for the DB
+    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
 
     const newReview = { 
         name, loc, cuisine, author, rating, text, 
@@ -135,6 +134,7 @@ async function submitReview() {
         await db.collection('reviews').add(newReview);
         showToast('Review posted!');
         
+        // Reset all fields
         document.getElementById('inp-name').value = '';
         document.getElementById('inp-region').value = '';
         document.getElementById('inp-town').value = '';
@@ -160,13 +160,6 @@ function renderReviews() {
     grid.innerHTML = reviews.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
-        // Check if loc contains a link (indicated by " — ")
-        let displayLoc = r.loc;
-        if (r.loc && r.loc.includes(' — ')) {
-            const [textPart, linkPart] = r.loc.split(' — ');
-            displayLoc = `${textPart} <a href="${linkPart}" target="_blank" style="text-decoration:none; margin-left:5px;">🔗</a>`;
-        }
-
         return `
         <div class="rest-card">
             <div class="card-actions">
@@ -174,7 +167,7 @@ function renderReviews() {
             </div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
-            <div class="location">📍 ${displayLoc}</div>
+            <div class="location">📍 ${r.loc}</div>
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
@@ -377,20 +370,19 @@ function openEditModal(id) {
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
 
-    // Parse the stored location string: "Town (Region) — Link"
+    // Parse the stored location string back into parts for the modal
     const locString = r.loc || "";
     let town = "", region = "Central", link = "";
 
     if (locString.includes(' (')) {
-        const parts = locString.split(' (');
-        town = parts[0];
-        const subParts = parts[1].split(')');
-        region = subParts[0];
-        if (subParts[1] && subParts[1].includes(' — ')) {
-            link = subParts[1].split(' — ')[1];
+        town = locString.split(' (')[0];
+        const remainder = locString.split(' (')[1];
+        region = remainder.split(')')[0];
+        if (remainder.includes(' — ')) {
+            link = remainder.split(' — ')[1];
         }
     } else {
-        town = locString; // Fallback for old data
+        town = locString;
     }
 
     document.getElementById('edit-town').value = town;
@@ -452,6 +444,8 @@ async function saveEdit() {
     const region = document.getElementById('edit-region').value;
     const town = document.getElementById('edit-town').value.trim();
     const link = document.getElementById('edit-link').value.trim();
+
+    // Combine manual fields into the loc string
     const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
 
     const fileInput = document.getElementById('edit-img-input');
