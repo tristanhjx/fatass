@@ -176,10 +176,10 @@ function renderReviews() {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
         return `
-        <div class="rest-card" style="position:relative;">
+        <div class="rest-card">
             <div class="card-actions">
-                <button class="action-icon" onclick="openEditModal('${r.id}')">✏️</button>
-                <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
+                <button class="action-icon" onclick="openEditModal('${r.id}')" title="Edit">✏️</button>
+                <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')" title="Delete">🗑️</button>
             </div>
             
             <div class="tag">${r.cuisine || 'Cuisine'}</div>
@@ -187,14 +187,14 @@ function renderReviews() {
                 ${r.region || 'Uncategorized'}
             </div>
             
-            <h3>${r.name}</h3>
+            <h3 style="margin-top: 5px;">${r.name}</h3>
             
             <div class="location" style="margin-bottom:10px; font-size:11px;">
                 ${r.mapsLink 
-                    ? `<a href="${r.mapsLink}" target="_blank" style="color:var(--teal); text-decoration:none;">📍 ${r.loc || 'View Map'}</a>`
+                    ? `<a href="${r.mapsLink}" target="_blank" style="color:var(--teal); text-decoration:none; position:relative; z-index:5;">📍 ${r.loc || 'View Map'}</a>`
                     : `📍 ${r.loc || 'Unknown'}`}
             </div>
-    
+        
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
@@ -206,6 +206,7 @@ function renderReviews() {
             </div>
         </div>`;
     }).join('');
+}
 
 // --- 6. Tier List Logic ---
 function autoMapToTier(review) {
