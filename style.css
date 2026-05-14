@@ -21,6 +21,43 @@
     gap: 8px;
 }
 
+#restGrid .rating-val {
+    font-size: 32px !important; /* Increased to be very prominent */
+    font-weight: 800;
+    margin: 10px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    line-height: 1;
+}
+
+#restGrid .review-count {
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--muted);
+    letter-spacing: 0;
+}
+
+/* --- 2. Bigger Cuisine Tag --- */
+#restGrid .tag {
+    font-size: 14px !important;
+    padding: 6px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: inline-block;
+}
+
+/* --- 3. Optional: Make the Restaurant Name slightly bigger to match --- */
+#restGrid h3 {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh;}
 
 /* Navigation */
