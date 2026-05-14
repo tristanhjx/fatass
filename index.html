@@ -68,7 +68,6 @@
 
     <div id="page-tier" class="page">
         <div class="page-hero"><h2>Tier List</h2><p>// rank the spots, no cap //</p></div>
-        
         <div class="tier-legend">
             <div class="legend-item"><span class="l-dot s"></span><strong>S (9.0+):</strong> God tier. Flawless execution. Travel-worthy.</div>
             <div class="legend-item"><span class="l-dot a"></span><strong>A (8.0-8.9):</strong> Exceptional. Solid, high-quality regular spot.</div>
@@ -77,7 +76,6 @@
             <div class="legend-item"><span class="l-dot d"></span><strong>D (4.5-5.9):</strong> Indifferent. You're eating purely for survival.</div>
             <div class="legend-item"><span class="l-dot f"></span><strong>F (0.0-4.4):</strong> Rubbish. Avoid at all costs. Physical pain.</div>
         </div>
-
         <div id="tierBoard">
             <div class="tier-row tier-s"><div class="tier-label">S<span class="tier-range">9+</span></div><div class="tier-items" id="tier-S"></div></div>
             <div class="tier-row tier-a"><div class="tier-label">A<span class="tier-range">8.0–8.9</span></div><div class="tier-items" id="tier-A"></div></div>
@@ -93,7 +91,6 @@
         <div class="form-card">
             <div class="form-grid">
                 <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
-                
                 <div class="form-row">
                     <label>Location Details</label>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -108,10 +105,8 @@
                         <input type="text" id="inp-town" placeholder="Town/Area (e.g. Toa Payoh)">
                     </div>
                     <input type="url" id="inp-link" placeholder="Paste link (Google Maps, IG, etc.)">
-                    <input type="hidden" id="inp-loc">
                 </div>
             </div>
-    
             <div class="form-grid">
                 <div class="form-row">
                     <label>Cuisine type</label>
@@ -138,22 +133,10 @@
         </div>
     </div>
 
-    <div class="modal-bg" id="removeModal">
-        <div class="modal">
-            <h3>Remove from wheel?</h3>
-            <p id="removeModalText"></p>
-            <div class="modal-btns">
-                <button class="btn btn-danger" id="confirmWheelBtn">Remove it</button>
-                <button class="btn btn-ghost" onclick="closeModal()">Keep it</button>
-            </div>
-        </div>
-    </div>
-
     <div class="modal-bg" id="editModal">
         <div class="modal" style="width: 500px; max-width: 95vw;">
             <h3>Edit Review</h3>
             <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
-            
             <div class="form-row">
                 <label>Location Details</label>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -166,10 +149,8 @@
                     </select>
                     <input type="text" id="edit-town" placeholder="Town/Area">
                 </div>
-                <input type="url" id="edit-link" placeholder="Link (Google Maps, IG, etc.)">
-                <input type="hidden" id="edit-loc">
+                <input type="url" id="edit-link" placeholder="Link">
             </div>
-    
             <div class="form-grid">
                 <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
                 <div class="form-row">
@@ -179,23 +160,14 @@
                     </select>
                 </div>
             </div>
-
             <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
-         
             <div class="form-row">
-                <label>Rating (0.0 - 10.0)</label>
+                <label>Rating</label>
                 <div class="slider-container">
                     <input type="range" id="edit-rating-slider" min="0" max="10" step="0.1">
                     <span id="edit-rating-display">7.0</span>
                 </div>
             </div>
-            
-            <div class="form-row">
-                <label>Manage Photos</label>
-                <div id="edit-image-preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
-                <input type="file" id="edit-img-input" accept="image/*" multiple>
-            </div>
-    
             <div class="modal-btns">
                 <button class="btn" onclick="saveEdit()">Save Changes</button>
                 <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
@@ -207,7 +179,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDQjAiwQf9la93veXb7N_AUzWBjNkWnh4s",
@@ -218,32 +189,9 @@
             appId: "1:248299532819:web:15a35c3d084ecfba6105e6",
             measurementId: "G-PRR74C35TN"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
-
     <script src="script.js"></script>
-
-    <div class="modal-bg" id="imageViewerModal" onclick="closeImageViewer()">
-        <div class="image-viewer-content">
-            <img id="fullSizeImage" src="" alt="Full size review">
-        </div>
-    </div>
-
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
-
-    <div class="modal-bg" id="mapModal">
-        <div class="modal" style="width: 500px; max-width: 95vw;">
-            <h3>Select Location</h3>
-            <input type="text" id="map-search" class="modal-input" placeholder="Search for a restaurant or place..." style="width:100%; margin-bottom:10px; padding:8px; background:#1e1e1e; border:1px solid #3a3a3a; color:white;">
-            <div id="googleMap" style="width: 100%; height: 300px; margin: 10px 0; background: #333;"></div>
-            <div class="modal-btns">
-                <button class="btn" onclick="confirmMapLocation()">Confirm</button>
-                <button class="btn btn-ghost" onclick="closeMapModal()">Cancel</button>
-            </div>
-        </div>
-    </div>
-    
 </body>
 </html>
