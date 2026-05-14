@@ -1,55 +1,71 @@
-// --- 1. Photo Optimization Helper ---
-async function resizeImage(file, maxWidth = 1024) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.7)); 
-            };
-        };
-    });
+/* --- 1. Rating Color Logic (Updated to your new scale) --- */
+function getRatingColor(val) {
+    const v = parseFloat(val);
+    if (v >= 9.0) return '#3498db'; // Blue
+    if (v >= 7.5) return '#2ecc71'; // Green
+    if (v >= 5.0) return '#f1c40f'; // Yellow
+    return '#ff4d4d';                // Red
 }
 
-// --- 2. Constants & State ---
-const WHEEL_CUISINES_KEY = 'fatass_wheel_cuisines_v3';
-const HISTORY_KEY = 'fatass_history_v3';
+/* --- 2. Review Rendering (Fixed Map Link) --- */
+function renderReviews() {
+    const grid = document.getElementById('restGrid');
+    if (!grid) return;
+    grid.innerHTML = reviews.map(r => {
+        const rCol = getRatingColor(r.rating);
+        return `
+            <div class="rest-card">
+                <div class="card-actions">
+                    <button class="action-icon" onclick="openEditModal('${r.id}')">✏️</button>
+                </div>
+                <div class="tag">${r.cuisine}</div>
+                <h3>${r.name}</h3>
+                <div class="location">
+                    📍 ${r.region} — ${r.loc}
+                    ${r.mapsLink ? `<a href="${r.mapsLink}" target="_blank" style="margin-left:5px; text-decoration:underline;">map</a>` : ''}
+                </div>
+                <div class="rating-val" style="color: ${rCol}">${r.rating.toFixed(1)} / 10</div>
+                <div class="snippet">"${r.text}"</div>
+                <div class="author-tag">— ${r.author}</div>
+                <button class="action-icon delete-btn" onclick="deleteReview('${r.id}')">🗑️</button>
+            </div>
+        `;
+    }).join('');
+}
 
-let reviews = []; 
-let spinHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-let spinning = false;
-let currentAngle = 0;
-let editMode = false;
+/* --- 3. Restored Wheel Logic (Untouched) --- */
+function initWheel() {
+    const cuisines = getCuisines();
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const size = canvas.width;
+    const center = size / 2;
+    const arc = (Math.PI * 2) / cuisines.length;
 
-const PALETTE = ['#c87941', '#4a9d9c', '#4a7a9d', '#6a6a6a', '#c84a4a', '#8e44ad', '#2c3e50', '#27ae60'];
+    ctx.clearRect(0, 0, size, size);
+    cuisines.forEach((c, i) => {
+        const angle = currentAngle + i * arc;
+        ctx.fillStyle = PALETTE[i % PALETTE.length];
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.arc(center, center, center - 10, angle, angle + arc);
+        ctx.lineTo(center, center);
+        ctx.fill();
+        ctx.strokeStyle = '#252525';
+        ctx.stroke();
 
-// --- 3. Navigation ---
-function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    
-    const target = document.getElementById('page-' + pageId);
-    if (target) target.classList.add('active');
-    
-    const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.textContent.toLowerCase().includes(pageId));
-    if (btn) btn.classList.add('active');
-
-    if (pageId === 'reviews') renderReviews();
-    if (pageId === 'spin') initWheel();
-    if (pageId === 'tier') renderTierList();
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 12px Monaco";
+        ctx.fillText(c.toUpperCase(), center - 30, 5);
+        ctx.restore();
+    });
+    updateCuisineLists();
+    renderHistory();
 }
 
 // --- 4. Firestore Logic ---
