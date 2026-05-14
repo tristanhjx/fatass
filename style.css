@@ -191,6 +191,33 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     justify-content: center;
 }
 
+/* Image Viewer Styling */
+.image-viewer-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#fullSizeImage {
+    max-width: 100%;
+    max-height: 90vh;
+    border: 2px solid var(--orange);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    object-fit: contain;
+}
+
+/* Ensure the pointer changes so users know it's clickable */
+.review-img-thumb {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.review-img-thumb:hover {
+    opacity: 0.8;
+}
+
 /* Modal & Toast */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;}
 .modal-bg.show{display:flex;}
