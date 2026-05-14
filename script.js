@@ -29,12 +29,9 @@ const WHEEL_CUISINES_KEY = 'fatass_wheel_cuisines_v3';
 const HISTORY_KEY = 'fatass_history_v3';
 
 let reviews = []; 
-let tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
 let spinHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-
 let spinning = false;
 let currentAngle = 0;
-let pendingRemove = null;
 let editMode = false;
 
 const PALETTE = ['#c87941', '#4a9d9c', '#4a7a9d', '#6a6a6a', '#c84a4a', '#8e44ad', '#2c3e50', '#27ae60'];
@@ -67,10 +64,8 @@ db.collection('reviews').orderBy('date', 'desc').onSnapshot(snap => {
 function updateDatalists() {
     const cuisines = [...new Set(reviews.map(r => r.cuisine))];
     const authors = [...new Set(reviews.map(r => r.author))];
-    
     const cList = document.getElementById('list-cuisines');
     const aList = document.getElementById('list-authors');
-    
     if (cList) cList.innerHTML = cuisines.map(c => `<option value="${c}">`).join('');
     if (aList) aList.innerHTML = authors.map(a => `<option value="${a}">`).join('');
 }
@@ -93,7 +88,7 @@ async function submitReview() {
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
 
-    if (!name || !cuisine || !author) return showToast('Please fill in Name, Cuisine, and Author');
+    if (!name || !cuisine || !author) return showToast('Fill in Name, Cuisine, and Author');
 
     let finalImg = "";
     if (imgFile) {
@@ -110,7 +105,6 @@ async function submitReview() {
     try {
         await db.collection('reviews').add(newReview);
         showToast('Review posted!');
-        // Reset fields
         ['inp-name', 'inp-loc', 'inp-maps-link', 'inp-cuisine', 'inp-author', 'inp-review', 'inp-img'].forEach(id => {
             document.getElementById(id).value = '';
         });
@@ -148,7 +142,7 @@ function renderReviews() {
                 <h3>${r.name}</h3>
                 <div class="location">
                     📍 ${r.region} — ${r.loc}
-                    ${r.mapsLink ? `<a href="${r.mapsLink}" target="_blank">🔗</a>` : ''}
+                    ${r.mapsLink ? `<a href="${r.mapsLink}" target="_blank" style="margin-left:5px; text-decoration:underline;">map</a>` : ''}
                 </div>
                 <div class="rating-val" style="color: ${rCol}">${r.rating.toFixed(1)} / 10</div>
                 <div class="snippet">"${r.text}"</div>
@@ -192,7 +186,6 @@ async function openEditModal(id) {
     const eDisplay = document.getElementById('edit-rating-display');
     eSlider.value = r.rating || 7.0;
     eDisplay.textContent = parseFloat(eSlider.value).toFixed(1);
-    eSlider.oninput = () => eDisplay.textContent = parseFloat(eSlider.value).toFixed(1);
 
     window.tempEditImages = Array.isArray(r.img) ? [...r.img] : (r.img ? [r.img] : []);
     renderEditImages();
@@ -326,7 +319,6 @@ function spinWheel() {
             `;
             
             spinHistory.unshift({ name: result, date: new Date().toLocaleTimeString() });
-            if (spinHistory.length > 20) spinHistory.pop();
             localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory));
             renderHistory();
         }
@@ -357,6 +349,7 @@ function renderTierList() {
 // --- 10. Utils ---
 function showToast(msg) {
     const t = document.getElementById('toast');
+    if (!t) return;
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
@@ -375,15 +368,12 @@ function closeImageViewer() {
     document.getElementById('imageViewerModal').classList.remove('show');
 }
 
-// Wheel Sidebar Management
 function updateCuisineLists() {
     const cuisines = getCuisines();
     const view = document.getElementById('cuisineViewList');
     const edit = document.getElementById('cuisineEditList');
-    if (!view || !edit) return;
-
-    view.innerHTML = cuisines.map(c => `<div class="tier-chip" style="margin:2px; display:inline-block;">${c}</div>`).join('');
-    edit.innerHTML = cuisines.map((c, i) => `
+    if (view) view.innerHTML = cuisines.map(c => `<div class="tier-chip" style="margin:2px; display:inline-block;">${c}</div>`).join('');
+    if (edit) edit.innerHTML = cuisines.map((c, i) => `
         <div class="cuisine-edit-item">
             <span>${c}</span>
             <button onclick="removeCuisine(${i})" style="background:none; border:none; color:#c84a4a; cursor:pointer;">×</button>
