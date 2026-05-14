@@ -1,14 +1,37 @@
-// --- Constants & State ---
-const STORAGE_KEY = 'fatass_reviews_v3';
-const CUISINE_LIST_KEY = 'fatass_cuisines_list_v3';
-const AUTHOR_LIST_KEY = 'fatass_authors_v3';
+// --- 1. Photo Optimization Helper ---
+async function resizeImage(file, maxWidth = 1024) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // Export as compact JPEG
+                resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+            };
+        };
+    });
+}
+
+// --- 2. Constants & State ---
 const WHEEL_CUISINES_KEY = 'fatass_wheel_cuisines_v3';
 const HISTORY_KEY = 'fatass_history_v3';
-const TIER_KEY = 'fatass_tiers_v1';
 
-let reviews = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+let reviews = []; 
+let tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
 let spinHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-let tierData = JSON.parse(localStorage.getItem(TIER_KEY)) || {S:[], A:[], B:[], C:[], D:[], F:[]};
 
 let spinning = false;
 let currentAngle = 0;
@@ -22,7 +45,7 @@ let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
     {label:'Western', color:'#6c8ac8'}, {label:'Italian', color:'#c85a5a'}
 ];
 
-// --- Slider & 3-Point Color Logic ---
+// --- 3. UI & Color Logic ---
 const slider = document.getElementById('ratingSlider');
 const display = document.getElementById('ratingValueDisplay');
 
@@ -31,14 +54,10 @@ function getDynamicColor(value) {
     let r, g, b;
     if (v <= 5) {
         const ratio = v / 5;
-        r = 230 + (255 - 230) * ratio;
-        g = 50 + (180 - 50) * ratio;
-        b = 50 + (50 - 50) * ratio;
+        r = 230 + (255 - 230) * ratio; g = 50 + (180 - 50) * ratio; b = 50 + (50 - 50) * ratio;
     } else {
         const ratio = (v - 5) / 5;
-        r = 255 + (74 - 255) * ratio;
-        g = 180 + (157 - 180) * ratio;
-        b = 50 + (156 - 50) * ratio;
+        r = 255 + (74 - 255) * ratio; g = 180 + (157 - 180) * ratio; b = 50 + (156 - 50) * ratio;
     }
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
@@ -64,7 +83,7 @@ if (slider) {
     updateSlider();
 }
 
-// --- Navigation ---
+// --- 4. Navigation & Firebase Sync ---
 function showPage(id) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -73,12 +92,20 @@ function showPage(id) {
     const navMap = { 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
     if (id in navMap) document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
 
-    if (id === 'reviews') renderReviews();
-    if (id === 'tier') renderTierBoard();
     if (id === 'spin') { renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
 }
 
-// --- Review Logic (Fixed Persistence) ---
+function syncWithFirebase() {
+    db.collection('reviews').orderBy('date', 'desc').onSnapshot(snapshot => {
+        reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
+        reviews.forEach(r => autoMapToTier(r));
+        renderReviews();
+        renderTierBoard();
+    });
+}
+
+// --- 5. Review Logic ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
     const loc = document.getElementById('inp-loc').value.trim();
@@ -90,60 +117,43 @@ async function submitReview() {
 
     if (!name || !cuisine || !author) return showToast('Fill in the basics!');
 
-    let imgBase64 = "";
+    let finalImg = "";
     if (imgFile) {
-        imgBase64 = await new Promise(res => {
-            const r = new FileReader();
-            r.onload = () => res(r.result);
-            r.readAsDataURL(imgFile);
-        });
+        showToast('Compressing photo...');
+        finalImg = await resizeImage(imgFile);
     }
 
     const newReview = { 
-        id: Date.now(), 
-        name, 
-        loc, 
-        cuisine, 
-        author, 
-        rating, 
-        text, 
-        img: imgBase64, 
+        name, loc, cuisine, author, rating, text, 
+        img: finalImg, 
         date: new Date().toISOString() 
     };
 
-    // 1. Save to global array and LocalStorage
-    reviews.push(newReview);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-    
-    // 2. Map to Tier List
-    autoMapToTier(newReview);
-    
-    // 3. Clear the form
-    document.getElementById('inp-name').value = '';
-    document.getElementById('inp-loc').value = '';
-    document.getElementById('inp-cuisine').value = '';
-    document.getElementById('inp-review').value = '';
-    document.getElementById('inp-img').value = '';
-    
-    // 4. Refresh Views and Switch Page
-    renderReviews(); 
-    showToast('Review posted & ranked!');
-    showPage('reviews');
+    try {
+        await db.collection('reviews').add(newReview);
+        showToast('Review posted!');
+        
+        document.getElementById('inp-name').value = '';
+        document.getElementById('inp-loc').value = '';
+        document.getElementById('inp-cuisine').value = '';
+        document.getElementById('inp-review').value = '';
+        document.getElementById('inp-img').value = '';
+        
+        showPage('reviews');
+    } catch (e) {
+        showToast('Upload failed!');
+        console.error(e);
+    }
 }
 
 function renderReviews() {
     const grid = document.getElementById('restGrid');
     if (!grid) return;
-    
-    // Refresh reviews from storage in case of updates
-    reviews = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
     if (reviews.length === 0) {
-        grid.innerHTML = '<p class="history-empty">No reviews yet. Be the first to drop a take.</p>';
+        grid.innerHTML = '<p class="history-empty">No reviews yet.</p>';
         return;
     }
-
-    grid.innerHTML = [...reviews].sort((a, b) => new Date(b.date) - new Date(a.date)).map(r => `
+    grid.innerHTML = reviews.map(r => `
         <div class="rest-card">
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
@@ -156,7 +166,7 @@ function renderReviews() {
         </div>`).join('');
 }
 
-// --- Tier List Logic ---
+// --- 6. Tier List Logic ---
 function autoMapToTier(review) {
     let tier = 'F';
     const v = review.rating;
@@ -166,28 +176,22 @@ function autoMapToTier(review) {
     else if (v >= 6.0) tier = 'C';
     else if (v >= 4.5) tier = 'D';
 
-    ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
-        tierData[t] = tierData[t].filter(x => x.name !== review.name);
-    });
-
-    tierData[tier].push({ id: review.id, name: review.name });
-    localStorage.setItem(TIER_KEY, JSON.stringify(tierData));
-    renderTierBoard();
+    if (!tierData[tier].some(x => x.name === review.name)) {
+        tierData[tier].push({ name: review.name });
+    }
 }
 
 function renderTierBoard() {
     ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
         const el = document.getElementById('tier-' + t);
         if (!el) return;
-        if (!tierData[t] || !tierData[t].length) {
-            el.innerHTML = '<span class="history-empty">empty</span>';
-            return;
-        }
-        el.innerHTML = tierData[t].map(x => `<div class="tier-chip">${x.name}</div>`).join('');
+        el.innerHTML = tierData[t].length 
+            ? tierData[t].map(x => `<div class="tier-chip">${x.name}</div>`).join('')
+            : '<span class="history-empty">empty</span>';
     });
 }
 
-// --- Spin the Wheel Logic ---
+// --- 7. Spin the Wheel Logic ---
 function renderWheel() {
     const canvas = document.getElementById('wheelCanvas');
     if (canvas) drawWheel(canvas.getContext('2d'), currentAngle);
@@ -248,7 +252,7 @@ function showSpinResult(c, idx) {
     document.getElementById('resultActions').innerHTML = `<button class="btn btn-danger" style="font-size:10px;padding:5px 10px;" onclick="promptRemove(${idx})">Remove from wheel</button>`;
 }
 
-// --- History & Cuisine Management ---
+// --- 8. Management & Modals ---
 function renderHistory() {
     const el = document.getElementById('historyList');
     if(el) el.innerHTML = spinHistory.map(h => `
@@ -291,7 +295,6 @@ function removeCuisine(i) {
     renderWheel(); renderCuisineView(); renderCuisineEditList();
 }
 
-// --- Modal & Toast ---
 function promptRemove(i) {
     pendingRemove = i;
     document.getElementById('removeModalText').textContent = `Remove ${wheelCuisines[i].label}?`;
@@ -314,9 +317,8 @@ function showToast(m) {
     setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// --- Global Initialization ---
+// --- 9. Global Init ---
 window.onload = () => {
-    renderReviews();
+    syncWithFirebase();
     renderWheel();
-    renderTierBoard();
 };
