@@ -27,223 +27,190 @@
             <button class="home-nav-btn" onclick="showPage('reviews')">Reviews <span class="arrow">→</span></button>
             <button class="home-nav-btn" onclick="showPage('spin')">Spin the Wheel <span class="arrow">→</span></button>
             <button class="home-nav-btn" onclick="showPage('tier')">Tier List <span class="arrow">→</span></button>
+            <button class="home-nav-btn" onclick="showPage('add')">+ Add Review <span class="arrow">→</span></button>
         </div>
     </div>
 
     <div id="page-reviews" class="page">
-        <div class="section-header">
-            <h2>The Archives</h2>
-        </div>
-        <div id="restGrid" class="rest-grid"></div>
+        <div class="page-hero"><h2>Reviews</h2><p>// what the crew has been eating //</p></div>
+        <div class="section-title">// all reviews</div>
+        <div class="rest-grid" id="restGrid"></div>
     </div>
 
     <div id="page-spin" class="page">
-        <div class="spin-container">
-            <div class="wheel-box">
+        <div class="page-hero"><h2>Spin the Wheel</h2><p>// can't decide? let fate cook //</p></div>
+        <div class="spin-layout">
+            <div class="wheel-wrap">
                 <canvas id="wheelCanvas" width="340" height="340"></canvas>
-                <div id="wheelResult" class="wheel-result">
-                    <div class="cuisine-sub">what's for lunch?</div>
-                </div>
-                <div id="resultActions" style="margin-top:10px;"></div>
-                <button id="spinBtn" class="btn" style="margin-top:20px; width:100%;" onclick="spinWheel()">Spin Fate</button>
+                <div class="wheel-result" id="wheelResult"><div class="cuisine-sub">hit spin to find out what you're eating</div></div>
+                <div class="result-actions" id="resultActions"></div>
+                <button class="btn spin-btn btn-teal" id="spinBtn" onclick="spinWheel()">SPIN</button>
             </div>
-            
-            <div class="wheel-meta">
-                <div class="meta-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                        <h3>The Wheel</h3>
-                        <button class="btn-ghost" onclick="toggleEdit()">Edit Cuisines</button>
-                    </div>
-                    
-                    <div id="cuisineViewList"></div>
-
-                    <div id="cuisineEditPanel" style="display:none;">
-                        <div style="display:flex; gap:5px; margin-bottom:1rem;">
-                            <input type="text" id="newCuisineInput" class="modal-input" placeholder="Add cuisine..." style="flex:1;">
-                            <button class="btn" style="padding:0 1rem;" onclick="addCuisine()">+</button>
-                        </div>
-                        <div id="cuisineEditList"></div>
-                    </div>
+            <div class="spin-sidebar">
+                <div class="sidebar-box">
+                    <div class="sidebar-title">// spin history <button onclick="clearHistory()">clear</button></div>
+                    <div class="history-list" id="historyList"><span class="history-empty">no spins yet</span></div>
                 </div>
-
-                <div class="meta-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                        <h3>History</h3>
-                        <button class="btn-ghost" onclick="clearHistory()">Clear</button>
+                <div class="sidebar-box">
+                    <div class="sidebar-title">// cuisines <button onclick="toggleEdit()">edit</button></div>
+                    <div id="cuisineViewList"></div>
+                    <div id="cuisineEditPanel" style="display:none;">
+                        <div class="cuisine-edit-list" id="cuisineEditList"></div>
+                        <div class="cuisine-add-row">
+                            <input type="text" id="newCuisineInput" placeholder="add cuisine..." maxlength="20"/>
+                            <button onclick="addCuisine()">+ add</button>
+                        </div>
                     </div>
-                    <div id="historyList"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="page-tier" class="page">
-        <div class="section-header">
-            <h2>The Hierarchy</h2>
+        <div class="page-hero"><h2>Tier List</h2><p>// rank the spots, no cap //</p></div>
+        
+        <div class="tier-legend">
+            <div class="legend-item"><span class="l-dot s"></span><strong>S (9.0+):</strong> God tier. Flawless execution. Travel-worthy.</div>
+            <div class="legend-item"><span class="l-dot a"></span><strong>A (8.0-8.9):</strong> Exceptional. Solid, high-quality regular spot.</div>
+            <div class="legend-item"><span class="l-dot b"></span><strong>B (7.0-7.9):</strong> Good. Reliable meal you'd recommend to friends.</div>
+            <div class="legend-item"><span class="l-dot c"></span><strong>C (6.0-6.9):</strong> Decent. Average food that hits the spot when hungry.</div>
+            <div class="legend-item"><span class="l-dot d"></span><strong>D (4.5-5.9):</strong> Indifferent. You're eating purely for survival.</div>
+            <div class="legend-item"><span class="l-dot f"></span><strong>F (0.0-4.4):</strong> Rubbish. Avoid at all costs. Physical pain.</div>
         </div>
-        <div class="tier-board">
-            <div class="tier-row"><div class="tier-label s">S</div><div id="tier-S" class="tier-content"></div></div>
-            <div class="tier-row"><div class="tier-label a">A</div><div id="tier-A" class="tier-content"></div></div>
-            <div class="tier-row"><div class="tier-label b">B</div><div id="tier-B" class="tier-content"></div></div>
-            <div class="tier-row"><div class="tier-label c">C</div><div id="tier-C" class="tier-content"></div></div>
-            <div class="tier-row"><div class="tier-label d">D</div><div id="tier-D" class="tier-content"></div></div>
-            <div class="tier-row"><div class="tier-label f">F</div><div id="tier-F" class="tier-content"></div></div>
+
+        <div id="tierBoard">
+            <div class="tier-row tier-s"><div class="tier-label">S<span class="tier-range">9+</span></div><div class="tier-items" id="tier-S"></div></div>
+            <div class="tier-row tier-a"><div class="tier-label">A<span class="tier-range">8.0–8.9</span></div><div class="tier-items" id="tier-A"></div></div>
+            <div class="tier-row tier-b"><div class="tier-label">B<span class="tier-range">7.0–7.9</span></div><div class="tier-items" id="tier-B"></div></div>
+            <div class="tier-row tier-c"><div class="tier-label">C<span class="tier-range">6.0–6.9</span></div><div class="tier-items" id="tier-C"></div></div>
+            <div class="tier-row tier-d"><div class="tier-label">D<span class="tier-range">4.5–5.9</span></div><div class="tier-items" id="tier-D"></div></div>
+            <div class="tier-row tier-f"><div class="tier-label">F<span class="tier-range">0–4.4</span></div><div class="tier-items" id="tier-F"></div></div>
         </div>
     </div>
 
     <div id="page-add" class="page">
-        <div class="add-container">
-            <div class="section-header"><h2>New Review</h2></div>
-            
-            <div class="input-group">
-                <label>Restaurant Name</label>
-                <input type="text" id="inp-name" class="modal-input" placeholder="e.g. Maxwell Food Centre">
+        <div class="page-hero"><h2>Add Review</h2><p>// drop your hot take //</p></div>
+        <div class="form-card">
+            <div class="form-grid">
+                <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
+                
+                <div class="form-row">
+                    <label>Location Details</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <select id="inp-region" style="width:100%;">
+                            <option value="" disabled selected>Region</option>
+                            <option value="Central">Central</option>
+                            <option value="North">North</option>
+                            <option value="North-East">North-East</option>
+                            <option value="East">East</option>
+                            <option value="West">West</option>
+                        </select>
+                        <input type="text" id="inp-town" placeholder="Town/Area (e.g. Toa Payoh)">
+                    </div>
+                    <input type="url" id="inp-link" placeholder="Paste link (Google Maps, IG, etc.)">
+                    <input type="hidden" id="inp-loc">
+                </div>
             </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>Region</label>
-                    <select id="inp-region" class="modal-input">
-                        <option value="Central">Central</option>
-                        <option value="East">East</option>
-                        <option value="North">North</option>
-                        <option value="North-East">North-East</option>
-                        <option value="West">West</option>
-                        <option value="South">South</option>
+    
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>Cuisine type</label>
+                    <input list="list-cuisines" id="inp-cuisine" placeholder="e.g. Japanese">
+                    <datalist id="list-cuisines"></datalist>
+                </div>
+                <div class="form-row">
+                    <label>Your name</label>
+                    <select id="inp-author" style="width:100%;">
+                        <option value="" disabled selected>Select Name</option>
                     </select>
                 </div>
-                <div class="input-group">
-                    <label>Town</label>
-                    <input type="text" id="inp-town" class="modal-input" placeholder="e.g. Tanjong Pagar">
+            </div>
+            <div class="form-row">
+                <label>Rating (0.0 - 10.0)</label>
+                <div class="slider-container">
+                    <input type="range" id="ratingSlider" min="0" max="10" step="0.1" value="7.0">
+                    <span id="ratingValueDisplay">7.0</span>
                 </div>
             </div>
-
-            <div class="input-group">
-                <label>Google Maps Link (Optional)</label>
-                <input type="text" id="inp-link" class="modal-input" placeholder="Paste URL here...">
-            </div>
-
-            <div class="input-group">
-                <label>Cuisine</label>
-                <input type="text" id="inp-cuisine" class="modal-input" placeholder="e.g. Japanese, Hawker">
-            </div>
-
-            <div class="input-group">
-                <label>Reviewer</label>
-                <div style="display:flex; gap:5px;">
-                    <select id="inp-author" class="modal-input" style="flex:1;">
-                        <option value="">Select Author...</option>
-                    </select>
-                    <button type="button" class="btn" style="padding:0 15px;" onclick="addNewAuthor()">+</button>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label>Rating Score</label>
-                <input type="range" id="ratingSlider" min="0" max="10" step="0.1" value="7.0" style="width:100%;">
-                <div id="ratingValueDisplay">7.0</div>
-                <button type="button" class="btn-ghost" style="width:100%; margin-top:10px; border-style: dashed;" onclick="showTierGuide()">View Tier Guide</button>
-            </div>
-
-            <div class="input-group">
-                <label>The Verdict</label>
-                <textarea id="inp-review" class="modal-input" rows="4" placeholder="Be honest..."></textarea>
-            </div>
-
-            <div class="input-group">
-                <label>Photo</label>
-                <input type="file" id="inp-img" accept="image/*" class="modal-input">
-            </div>
-
-            <button class="btn btn-teal" style="width:100%; margin-top:1rem;" onclick="submitReview()">Post Review</button>
-        </div>
-    </div>
-
-    <div class="modal-bg" id="editModal">
-        <div class="modal" style="width: 450px; max-width: 95vw; overflow-y: auto; max-height: 90vh;">
-            <h3 style="margin-bottom:1.5rem;">Edit Review</h3>
-            
-            <div class="input-group">
-                <label>Restaurant Name</label>
-                <input type="text" id="edit-name" class="modal-input">
-            </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>Region</label>
-                    <select id="edit-region" class="modal-input">
-                        <option value="Central">Central</option>
-                        <option value="East">East</option>
-                        <option value="North">North</option>
-                        <option value="North-East">North-East</option>
-                        <option value="West">West</option>
-                        <option value="South">South</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Town</label>
-                    <input type="text" id="edit-town" class="modal-input">
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label>Google Maps Link</label>
-                <input type="text" id="edit-link" class="modal-input">
-            </div>
-
-            <div class="input-group">
-                <label>Cuisine</label>
-                <input type="text" id="edit-cuisine" class="modal-input">
-            </div>
-
-            <div class="input-group">
-                <label>Score</label>
-                <input type="range" id="edit-rating-slider" min="0" max="10" step="0.1" style="width:100%;">
-                <div id="edit-rating-display" style="text-align:center; font-weight:bold; font-size:1.5rem;"></div>
-            </div>
-
-            <div class="input-group">
-                <label>Verdict</label>
-                <textarea id="edit-review" class="modal-input" rows="4"></textarea>
-            </div>
-
-            <div class="input-group">
-                <label>Add More Photos</label>
-                <input type="file" id="edit-img-input" accept="image/*" multiple class="modal-input">
-            </div>
-
-            <div id="edit-image-preview-container" class="image-gallery" style="margin-bottom:1rem;"></div>
-
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-teal" style="flex:1" onclick="saveEdit()">Save</button>
-                <button class="btn btn-ghost" style="flex:1" onclick="closeEditModal()">Cancel</button>
-            </div>
+            <div class="form-row"><label>Review</label><textarea id="inp-review" placeholder="Worth the queue?"></textarea></div>
+            <div class="form-row"><label>Photo</label><input type="file" id="inp-img" accept="image/*"></div>
+            <button class="btn" onclick="submitReview()">Post Review</button>
         </div>
     </div>
 
     <div class="modal-bg" id="removeModal">
         <div class="modal">
-            <p id="removeModalText" style="margin-bottom:1.5rem;"></p>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-danger" style="flex:1">Remove</button>
-                <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancel</button>
+            <h3>Remove from wheel?</h3>
+            <p id="removeModalText"></p>
+            <div class="modal-btns">
+                <button class="btn btn-danger" id="confirmWheelBtn">Remove it</button>
+                <button class="btn btn-ghost" onclick="closeModal()">Keep it</button>
             </div>
         </div>
     </div>
 
-    <div class="modal-bg" id="imageViewerModal" onclick="closeImageViewer()">
-        <div class="image-viewer-content">
-            <img id="fullSizeImage" src="" alt="Full size review">
+    <div class="modal-bg" id="editModal">
+        <div class="modal" style="width: 500px; max-width: 95vw;">
+            <h3>Edit Review</h3>
+            <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
+            
+            <div class="form-row">
+                <label>Location Details</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <select id="edit-region">
+                        <option value="Central">Central</option>
+                        <option value="North">North</option>
+                        <option value="North-East">North-East</option>
+                        <option value="East">East</option>
+                        <option value="West">West</option>
+                    </select>
+                    <input type="text" id="edit-town" placeholder="Town/Area">
+                </div>
+                <input type="url" id="edit-link" placeholder="Link (Google Maps, IG, etc.)">
+                <input type="hidden" id="edit-loc">
+            </div>
+    
+            <div class="form-grid">
+                <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
+                <div class="form-row">
+                    <label>Reviewer Name</label>
+                    <select id="edit-author" style="width:100%;">
+                        <option value="" disabled selected>Select Name</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
+         
+            <div class="form-row">
+                <label>Rating (0.0 - 10.0)</label>
+                <div class="slider-container">
+                    <input type="range" id="edit-rating-slider" min="0" max="10" step="0.1">
+                    <span id="edit-rating-display">7.0</span>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <label>Manage Photos</label>
+                <div id="edit-image-preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
+                <input type="file" id="edit-img-input" accept="image/*" multiple>
+            </div>
+    
+            <div class="modal-btns">
+                <button class="btn" onclick="saveEdit()">Save Changes</button>
+                <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+            </div>
         </div>
     </div>
 
-    <div id="toast" class="toast"></div>
+    <div class="toast" id="toast"></div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyBw-EXAMPLE",
+            apiKey: "AIzaSyDQjAiwQf9la93veXb7N_AUzWBjNkWnh4s",
             authDomain: "fatass-f5c0e.firebaseapp.com",
             projectId: "fatass-f5c0e",
             storageBucket: "fatass-f5c0e.firebasestorage.app",
@@ -251,10 +218,32 @@
             appId: "1:248299532819:web:15a35c3d084ecfba6105e6",
             measurementId: "G-PRR74C35TN"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
 
     <script src="script.js"></script>
+
+    <div class="modal-bg" id="imageViewerModal" onclick="closeImageViewer()">
+        <div class="image-viewer-content">
+            <img id="fullSizeImage" src="" alt="Full size review">
+        </div>
+    </div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+
+    <div class="modal-bg" id="mapModal">
+        <div class="modal" style="width: 500px; max-width: 95vw;">
+            <h3>Select Location</h3>
+            <input type="text" id="map-search" class="modal-input" placeholder="Search for a restaurant or place..." style="width:100%; margin-bottom:10px; padding:8px; background:#1e1e1e; border:1px solid #3a3a3a; color:white;">
+            <div id="googleMap" style="width: 100%; height: 300px; margin: 10px 0; background: #333;"></div>
+            <div class="modal-btns">
+                <button class="btn" onclick="confirmMapLocation()">Confirm</button>
+                <button class="btn btn-ghost" onclick="closeMapModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
 </body>
 </html>
