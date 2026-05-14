@@ -27,12 +27,10 @@ async function resizeImage(file, maxWidth = 1024) {
 // --- 2. Constants & State ---
 const WHEEL_CUISINES_KEY = 'fatass_wheel_cuisines_v3';
 const HISTORY_KEY = 'fatass_history_v3';
-const AUTHORS_KEY = 'fatass_authors_v1';
 
 let reviews = []; 
 let tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
 let spinHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-let authorList = JSON.parse(localStorage.getItem(AUTHORS_KEY)) || ["Guest"];
 
 let spinning = false;
 let currentAngle = 0;
@@ -40,57 +38,9 @@ let pendingRemove = null;
 let editMode = false;
 let currentEditId = null;
 
-const PALETTE = ['#c87941', '#4a9d9c', '#b05070', '#c8a041', '#8a6cc8', '#41a06c', '#6c8ac8', '#c85a5a', '#5a9ec8', '#9d7a4a'];
-let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
-    {label:'Hawker', color:'#c87941'}, {label:'Japanese', color:'#4a9d9c'}, {label:'Korean', color:'#b05070'},
-    {label:'Chinese', color:'#c8a041'}, {label:'Indian', color:'#8a6cc8'}, {label:'Thai', color:'#41a06c'},
-    {label:'Western', color:'#6c8ac8'}, {label:'Italian', color:'#c85a5a'}
-];
+const PALETTE = ['#c87941', '#4a9d9c', '#4a7a9d', '#6a6a6a', '#8e8e8e', '#a0602e'];
 
-// --- 3. UI & Color Logic ---
-const slider = document.getElementById('ratingSlider');
-const display = document.getElementById('ratingValueDisplay');
-
-function getDynamicColor(value) {
-    const v = parseFloat(value);
-    let r, g, b;
-    if (v <= 5) {
-        const ratio = v / 5;
-        r = 230 + (255 - 230) * ratio; g = 50 + (180 - 50) * ratio; b = 50 + (50 - 50) * ratio;
-    } else {
-        const ratio = (v - 5) / 5;
-        r = 255 + (74 - 255) * ratio; g = 180 + (157 - 180) * ratio; b = 50 + (156 - 50) * ratio;
-    }
-    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-}
-
-function getTierColor(v) { return getDynamicColor(v); }
-
-if (slider) {
-    const updateSlider = () => {
-        const v = parseFloat(slider.value).toFixed(1);
-        const newColor = getDynamicColor(v);
-        display.textContent = v;
-        display.style.color = newColor;
-        slider.style.accentColor = newColor;
-    };
-    slider.addEventListener('input', updateSlider);
-    updateSlider();
-}
-
-// --- 4. Navigation & Firebase Sync ---
-function showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-' + id).classList.add('active');
-    
-    const navButtons = document.querySelectorAll('.nav-btn');
-    if (id === 'reviews') navButtons[0].classList.add('active');
-    if (id === 'spin') { navButtons[1].classList.add('active'); renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
-    if (id === 'tier') navButtons[2].classList.add('active');
-    if (id === 'add') { navButtons[3].classList.add('active'); renderAuthorDropdown(); }
-}
-
+// --- 3. Firebase Sync ---
 function syncWithFirebase() {
     db.collection('reviews').orderBy('date', 'desc').onSnapshot(snapshot => {
         reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -98,325 +48,371 @@ function syncWithFirebase() {
         reviews.forEach(r => autoMapToTier(r));
         renderReviews();
         renderTierBoard();
+        updateCuisineDatalist();
+        updateAuthorDropdowns(); // Dynamic population of your name list
     });
 }
 
-// --- 5. Reviewer Logic ---
-function renderAuthorDropdown() {
-    const select = document.getElementById('inp-author');
-    if (!select) return;
-    const current = select.value;
-    select.innerHTML = '<option value="">Select Author...</option>' + 
-        authorList.map(name => `<option value="${name}" ${name === current ? 'selected' : ''}>${name}</option>`).join('');
+// --- 4. Core Logic: Author Dropdown Population ---
+function updateAuthorDropdowns() {
+    // Extract unique authors from the database
+    const uniqueAuthors = [...new Set(reviews.map(r => r.author).filter(Boolean))].sort();
+    
+    const addSelect = document.getElementById('inp-author');
+    const editSelect = document.getElementById('edit-author');
+
+    const fillSelect = (selectEl, defaultText) => {
+        if (!selectEl) return;
+        const currentVal = selectEl.value;
+        selectEl.innerHTML = `<option value="" disabled selected>${defaultText}</option>`;
+        uniqueAuthors.forEach(author => {
+            const opt = document.createElement('option');
+            opt.value = author;
+            opt.textContent = author;
+            selectEl.appendChild(opt);
+        });
+        if (currentVal) selectEl.value = currentVal;
+    };
+
+    fillSelect(addSelect, "Select Name");
+    fillSelect(editSelect, "Select Name");
 }
 
-function addNewAuthor() {
-    const name = prompt("Enter new reviewer name:");
-    if (name && name.trim() !== "") {
-        const cleanName = name.trim();
-        if (!authorList.includes(cleanName)) {
-            authorList.push(cleanName);
-            localStorage.setItem(AUTHORS_KEY, JSON.stringify(authorList));
-            renderAuthorDropdown();
-            document.getElementById('inp-author').value = cleanName;
-        }
-    }
+function updateCuisineDatalist() {
+    const list = document.getElementById('list-cuisines');
+    const cuisines = [...new Set(reviews.map(r => r.cuisine).filter(Boolean))].sort();
+    list.innerHTML = cuisines.map(c => `<option value="${c}">`).join('');
 }
 
-function showTierGuide() {
-    alert("S: 9.0 - 10.0 (Godly)\nA: 8.0 - 8.9 (Solid)\nB: 7.0 - 7.9 (Good)\nC: 6.0 - 6.9 (Mid)\nD: 4.5 - 5.9 (Desperate)\nF: 0.0 - 4.4 (Avoid)");
+// --- 5. Navigation ---
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + pageId).classList.add('active');
+    if(pageId === 'spin') initWheel();
+    window.scrollTo(0,0);
 }
 
-// --- 6. Review Logic ---
+// --- 6. Review CRUD ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
+    const author = document.getElementById('inp-author').value; // Get from select
+    const cuisine = document.getElementById('inp-cuisine').value.trim();
+    const rating = parseFloat(document.getElementById('ratingSlider').value);
+    const text = document.getElementById('inp-review').value.trim();
+    const imgFile = document.getElementById('inp-img').files[0];
+    
+    // Location handling
     const region = document.getElementById('inp-region').value;
     const town = document.getElementById('inp-town').value.trim();
     const link = document.getElementById('inp-link').value.trim();
-    const cuisine = document.getElementById('inp-cuisine').value.trim();
-    const author = document.getElementById('inp-author').value;
-    const text = document.getElementById('inp-review').value.trim();
-    const rating = parseFloat(slider.value);
-    const imgFile = document.getElementById('inp-img').files[0];
-
-    if (!name || !region || !town || !cuisine || !author) return showToast('Fill in all required fields!');
-
-    let finalImg = "";
-    if (imgFile) {
-        showToast('Compressing photo...');
-        finalImg = await resizeImage(imgFile);
+    
+    if(!name || !author || !cuisine || !region || !town) {
+        return showToast('Please fill all required fields');
     }
 
-    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
+    const locString = `${town} (${region})${link ? ' — ' + link : ''}`;
 
-    const newReview = { 
-        name, loc, cuisine, author, rating, text, 
-        img: finalImg ? [finalImg] : [], 
-        date: new Date().toISOString() 
-    };
+    let imgData = [];
+    if(imgFile) {
+        const compressed = await resizeImage(imgFile);
+        imgData.push(compressed);
+    }
 
     try {
-        await db.collection('reviews').add(newReview);
+        await db.collection('reviews').add({
+            name, author, cuisine, rating, text, 
+            img: imgData,
+            loc: locString,
+            date: new Date().toISOString()
+        });
         showToast('Review posted!');
-        document.getElementById('inp-name').value = '';
-        document.getElementById('inp-town').value = '';
-        document.getElementById('inp-link').value = '';
-        document.getElementById('inp-cuisine').value = '';
-        document.getElementById('inp-review').value = '';
-        document.getElementById('inp-img').value = '';
+        resetForm();
         showPage('reviews');
-    } catch (e) {
-        showToast('Upload failed!');
-        console.error(e);
+    } catch(e) {
+        showToast('Error posting review');
     }
 }
 
-function renderReviews() {
-    const grid = document.getElementById('restGrid');
-    if (!grid) return;
-    if (reviews.length === 0) {
-        grid.innerHTML = '<p class="history-empty">No reviews yet.</p>';
-        return;
-    }
-    grid.innerHTML = reviews.map(r => {
-        const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-        let displayLoc = r.loc || "";
-        if (displayLoc.includes(' — ')) {
-            const parts = displayLoc.split(' — ');
-            displayLoc = `${parts[0]} • <a href="${parts[1]}" target="_blank" style="color:var(--teal); text-decoration:underline;">Map</a>`;
-        }
-
-        return `
-        <div class="rest-card">
-            <div class="card-actions"><button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button></div>
-            <div class="tag">${r.cuisine}</div>
-            <h3>${r.name}</h3>
-            <div class="location">📍 ${displayLoc}</div>
-            <div class="rating-val" style="color:${getTierColor(r.rating)}">
-                ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
-            </div>
-            <div class="snippet">${r.text}</div>
-            <div class="image-gallery">
-                ${images.map(imgSrc => `<img src="${imgSrc}" class="review-img-thumb" onclick="openImageViewer('${imgSrc}')">`).join('')}
-            </div>
-            <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
-        </div>`;
-    }).join('');
+function resetForm() {
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-author').value = '';
+    document.getElementById('inp-cuisine').value = '';
+    document.getElementById('inp-review').value = '';
+    document.getElementById('inp-img').value = '';
+    document.getElementById('inp-region').value = '';
+    document.getElementById('inp-town').value = '';
+    document.getElementById('inp-link').value = '';
+    document.getElementById('ratingSlider').value = 7.0;
+    document.getElementById('ratingValueDisplay').textContent = '7.0';
 }
 
-// --- 7. Tier List Logic ---
-function autoMapToTier(review) {
-    let tier = 'F';
-    const v = review.rating;
-    if (v >= 9.0) tier = 'S';
-    else if (v >= 8.0) tier = 'A';
-    else if (v >= 7.0) tier = 'B';
-    else if (v >= 6.0) tier = 'C';
-    else if (v >= 4.5) tier = 'D';
-
-    tierData[tier].push({ name: review.name });
-}
-
-function renderTierBoard() {
-    ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
-        const el = document.getElementById('tier-' + t);
-        if (!el) return;
-        el.innerHTML = tierData[t].length 
-            ? tierData[t].map(x => `<div class="tier-chip">${x.name}</div>`).join('')
-            : '<span class="history-empty">empty</span>';
-    });
-}
-
-// --- 8. Wheel Logic ---
-function renderWheel() {
-    const canvas = document.getElementById('wheelCanvas');
-    if (canvas) drawWheel(canvas.getContext('2d'), currentAngle);
-}
-
-function drawWheel(ctx, angle) {
-    const cx = 170, cy = 170, r = 155, n = wheelCuisines.length;
-    if (!n) return;
-    const arc = 2 * Math.PI / n;
-    ctx.clearRect(0, 0, 340, 340);
-    wheelCuisines.forEach((c, i) => {
-        const start = angle + i * arc, end = start + arc;
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, start, end); ctx.closePath();
-        ctx.fillStyle = c.color; ctx.fill();
-        ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.save(); ctx.translate(cx, cy); ctx.rotate(start + arc / 2);
-        ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Monaco,monospace';
-        ctx.fillText(c.label, r - 10, 4); ctx.restore();
-    });
-    ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = '#1e1e1e'; ctx.fill();
-    ctx.strokeStyle = '#c87941'; ctx.lineWidth = 2; ctx.stroke();
-}
-
-function spinWheel() {
-    if (spinning || !wheelCuisines.length) return;
-    spinning = true;
-    document.getElementById('spinBtn').disabled = true;
-    const canvas = document.getElementById('wheelCanvas'), ctx = canvas.getContext('2d');
-    const extraSpins = 10 + Math.random() * 5, totalRot = Math.PI * 2 * extraSpins, duration = 6500, start = performance.now(), startAngle = currentAngle;
-
-    function frame(now) {
-        const t = Math.min((now - start) / duration, 1);
-        currentAngle = startAngle + totalRot * (1 - Math.pow(1 - t, 4));
-        drawWheel(ctx, currentAngle);
-        if (t < 1) requestAnimationFrame(frame);
-        else {
-            spinning = false;
-            document.getElementById('spinBtn').disabled = false;
-            const arc = 2 * Math.PI / wheelCuisines.length;
-            const adjusted = (((-Math.PI / 2) - currentAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-            const idx = Math.floor(adjusted / arc) % wheelCuisines.length;
-            showSpinResult(wheelCuisines[idx], idx);
-        }
-    }
-    requestAnimationFrame(frame);
-}
-
-function showSpinResult(c, idx) {
-    const now = new Date();
-    const fullStamp = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ", " + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    spinHistory.unshift({ label: c.label, color: c.color, time: fullStamp });
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory.slice(0, 20)));
-    renderHistory();
-    document.getElementById('wheelResult').innerHTML = `<div class="cuisine-name" style="color:${c.color}">${c.label}</div><div class="cuisine-sub">fate has spoken</div>`;
-    document.getElementById('resultActions').innerHTML = `<button class="btn btn-danger" style="font-size:10px;padding:5px 10px;" onclick="promptRemove(${idx})">Remove from wheel</button>`;
-}
-
-// --- 9. Helpers & Management ---
-function renderHistory() {
-    const el = document.getElementById('historyList');
-    if(el) el.innerHTML = spinHistory.map(h => `<div class="history-item"><span style="color:${h.color}">${h.label}</span><span class="history-time">${h.time}</span></div>`).join('') || '<span class="history-empty">no spins</span>';
-}
-function clearHistory() { spinHistory = []; localStorage.removeItem(HISTORY_KEY); renderHistory(); }
-function toggleEdit() {
-    editMode = !editMode;
-    document.getElementById('cuisineViewList').style.display = editMode ? 'none' : 'block';
-    document.getElementById('cuisineEditPanel').style.display = editMode ? 'block' : 'none';
-}
-function renderCuisineView() {
-    const el = document.getElementById('cuisineViewList');
-    if(el) el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px;">` + wheelCuisines.map(c => `<span style="border:1px solid ${c.color};color:${c.color};font-size:10px;padding:2px 5px;">${c.label}</span>`).join('') + `</div>`;
-}
-function renderCuisineEditList() {
-    const el = document.getElementById('cuisineEditList');
-    if(el) el.innerHTML = wheelCuisines.map((c, i) => `<div class="cuisine-edit-item"><div class="cuisine-color-dot" style="background:${c.color}"></div><span>${c.label}</span><button onclick="removeCuisine(${i})">✕</button></div>`).join('');
-}
-function addCuisine() {
-    const i = document.getElementById('newCuisineInput'), l = i.value.trim();
-    if (!l) return;
-    wheelCuisines.push({ label: l, color: PALETTE[wheelCuisines.length % PALETTE.length] });
-    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
-    i.value = ''; renderWheel(); renderCuisineView(); renderCuisineEditList();
-}
-function removeCuisine(i) {
-    wheelCuisines.splice(i, 1);
-    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
-    renderWheel(); renderCuisineView(); renderCuisineEditList();
-}
-function promptRemove(i) {
-    pendingRemove = i;
-    document.getElementById('removeModalText').textContent = `Remove ${wheelCuisines[i].label}?`;
-    document.getElementById('removeModal').classList.add('show');
-}
-function confirmRemove() {
-    wheelCuisines.splice(pendingRemove, 1);
-    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
-    document.getElementById('removeModal').classList.remove('show');
-    renderWheel();
-    document.getElementById('wheelResult').innerHTML = '<div class="cuisine-sub">removed</div>';
-}
-function closeModal() { document.getElementById('removeModal').classList.remove('show'); }
-function showToast(m) {
-    const t = document.getElementById('toast');
-    if(!t) return;
-    t.textContent = m; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-// --- 10. Edit & Global ---
-window.onload = () => {
-    syncWithFirebase();
-    renderWheel();
-    renderAuthorDropdown();
-};
-
-async function promptDeleteReview(id) {
-    if (confirm("Delete this review?")) {
-        try { await db.collection('reviews').doc(id).delete(); showToast('Deleted'); } 
-        catch (e) { showToast('Failed'); }
+async function deleteReview(id) {
+    if(confirm('Delete this review forever?')) {
+        await db.collection('reviews').doc(id).delete();
+        showToast('Review deleted');
     }
 }
 
+// --- 7. Modal Logic (Edit/Image) ---
 function openEditModal(id) {
     currentEditId = id;
-    const r = reviews.find(x => x.id === id);
+    const r = reviews.find(item => item.id === id);
     if (!r) return;
-    document.getElementById('edit-name').value = r.name || "";
-    document.getElementById('edit-cuisine').value = r.cuisine || "";
-    document.getElementById('edit-review').value = r.text || "";
 
-    const locString = r.loc || "";
-    let town = "", region = "Central", link = "";
-    if (locString.includes(' (')) {
-        town = locString.split(' (')[0];
-        const rem = locString.split(' (')[1];
-        region = rem.split(')')[0];
-        if (rem.includes(' — ')) link = rem.split(' — ')[1];
-    } else { town = locString; }
+    document.getElementById('edit-name').value = r.name;
+    document.getElementById('edit-cuisine').value = r.cuisine;
+    document.getElementById('edit-author').value = r.author || ""; // Set select value
+    document.getElementById('edit-review').value = r.text;
+    document.getElementById('edit-rating-slider').value = r.rating;
+    document.getElementById('edit-rating-display').textContent = r.rating.toFixed(1);
 
-    document.getElementById('edit-town').value = town;
+    // Parse location string back to fields
+    let region = ""; let town = ""; let link = "";
+    if (r.loc) {
+        const parts = r.loc.split(' — ');
+        link = parts[1] || "";
+        const locMatch = parts[0].match(/(.*) \((.*)\)/);
+        if (locMatch) {
+            town = locMatch[1];
+            region = locMatch[2];
+        }
+    }
     document.getElementById('edit-region').value = region;
+    document.getElementById('edit-town').value = town;
     document.getElementById('edit-link').value = link;
 
-    const eSlider = document.getElementById('edit-rating-slider');
-    const eDisp = document.getElementById('edit-rating-display');
-    eSlider.value = r.rating || 7.0;
-    eSlider.oninput = () => {
-        const v = parseFloat(eSlider.value).toFixed(1);
-        eDisp.textContent = v;
-        eDisp.style.color = getDynamicColor(v);
-        eSlider.style.accentColor = getDynamicColor(v);
-    };
-    eSlider.oninput();
-    window.tempEditImages = Array.isArray(r.img) ? [...r.img] : (r.img ? [r.img] : []);
-    renderEditImages();
+    window.tempEditImages = r.img || [];
+    renderEditImagePreviews();
     document.getElementById('editModal').classList.add('show');
 }
 
-function renderEditImages() {
-    const container = document.getElementById('edit-image-preview-container');
-    container.innerHTML = window.tempEditImages.map((src, i) => `
-        <div class="edit-img-wrapper">
-            <img src="${src}" style="width:60px;height:60px;object-fit:cover;">
-            <button class="remove-img-btn" onclick="removeImageFromEdit(${i})">✕</button>
-        </div>`).join('');
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
 }
-function removeImageFromEdit(i) { window.tempEditImages.splice(i, 1); renderEditImages(); }
-function closeEditModal() { document.getElementById('editModal').classList.remove('show'); }
+
+function renderEditImagePreviews() {
+    const container = document.getElementById('edit-image-preview-container');
+    container.innerHTML = '';
+    window.tempEditImages.forEach((src, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'edit-img-wrap';
+        wrap.innerHTML = `<img src="${src}" style="width:60px;height:60px;object-fit:cover;">
+                          <button onclick="removeTempImg(${idx})">×</button>`;
+        container.appendChild(wrap);
+    });
+}
+
+function removeTempImg(idx) {
+    window.tempEditImages.splice(idx, 1);
+    renderEditImagePreviews();
+}
 
 async function saveEdit() {
-    const loc = `${document.getElementById('edit-town').value.trim()} (${document.getElementById('edit-region').value})${document.getElementById('edit-link').value.trim() ? ' — ' + document.getElementById('edit-link').value.trim() : ''}`;
+    const region = document.getElementById('edit-region').value;
+    const town = document.getElementById('edit-town').value.trim();
+    const link = document.getElementById('edit-link').value.trim();
+    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
+
     const fileInput = document.getElementById('edit-img-input');
-    let uploaded = [];
-    if (fileInput.files.length) { for (let f of fileInput.files) { uploaded.push(await resizeImage(f)); } }
+    const newFiles = fileInput ? fileInput.files : [];
+    let uploadedImages = [];
+
     try {
-        await db.collection('reviews').doc(currentEditId).update({
+        if (newFiles.length > 0) {
+            for (let file of newFiles) {
+                const compressed = await resizeImage(file);
+                uploadedImages.push(compressed);
+            }
+        }
+
+        const update = {
             name: document.getElementById('edit-name').value.trim(),
+            author: document.getElementById('edit-author').value, // Save author
             loc: loc,
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
-            img: [...window.tempEditImages, ...uploaded]
-        });
-        showToast('Saved'); closeEditModal();
-    } catch (e) { showToast('Error'); }
+            img: [...(window.tempEditImages || []), ...uploadedImages]
+        };
+
+        await db.collection('reviews').doc(currentEditId).update(update);
+        showToast('Updated successfully');
+        closeEditModal();
+    } catch (e) {
+        showToast('Update failed');
+    }
+}
+
+// --- 8. UI Rendering ---
+function renderReviews() {
+    const grid = document.getElementById('restGrid');
+    grid.innerHTML = reviews.map(r => `
+        <div class="review-card">
+            <div class="card-actions">
+                <button class="action-btn" onclick="openEditModal('${r.id}')">edit</button>
+                <button class="action-btn delete-btn" onclick="deleteReview('${r.id}')">del</button>
+            </div>
+            <div class="card-header">
+                <div class="card-title">
+                    <h3>${r.name}</h3>
+                    <div class="cuisine">${r.cuisine}</div>
+                </div>
+            </div>
+            <div class="rating-val">${r.rating.toFixed(1)} <span class="rating-max">/ 10</span></div>
+            <div class="review-meta">${r.author} • ${r.loc || 'Unknown'}</div>
+            <div class="review-text">${r.text}</div>
+            <div class="review-imgs">
+                ${(r.img || []).map(src => `<img src="${src}" class="review-img-thumb" onclick="openImageViewer('${src}')">`).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function autoMapToTier(r) {
+    const score = r.rating;
+    if(score >= 9.0) tierData.S.push(r);
+    else if(score >= 8.0) tierData.A.push(r);
+    else if(score >= 7.0) tierData.B.push(r);
+    else if(score >= 6.0) tierData.C.push(r);
+    else if(score >= 4.5) tierData.D.push(r);
+    else tierData.F.push(r);
+}
+
+function renderTierBoard() {
+    Object.keys(tierData).forEach(tier => {
+        const container = document.getElementById(`tier-${tier}`);
+        container.innerHTML = tierData[tier].sort((a,b) => b.rating - a.rating).map(r => `
+            <div class="tier-card" title="${r.name}">
+                <div class="t-name">${r.name}</div>
+                <div class="t-score">${r.rating.toFixed(1)}</div>
+            </div>
+        `).join('');
+    });
+}
+
+// --- 9. Wheel Logic ---
+let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
+    "Japanese", "Korean", "Western", "Chinese", "Thai", "Malay", "Indian"
+];
+
+function initWheel() {
+    renderCuisineLists();
+    drawWheel();
+}
+
+function renderCuisineLists() {
+    const viewList = document.getElementById('cuisineViewList');
+    viewList.innerHTML = wheelCuisines.map(c => `<span class="cuisine-tag">${c}</span>`).join(' ');
+    
+    const editList = document.getElementById('cuisineEditList');
+    editList.innerHTML = wheelCuisines.map((c, i) => `
+        <div class="cuisine-edit-item">
+            <span>${c}</span>
+            <button onclick="removeCuisine(${i})">×</button>
+        </div>
+    `).join('');
+}
+
+function drawWheel() {
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = canvas.width / 2 - 10;
+    
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const slice = (Math.PI * 2) / wheelCuisines.length;
+
+    wheelCuisines.forEach((c, i) => {
+        const angle = currentAngle + (i * slice);
+        ctx.beginPath();
+        ctx.fillStyle = PALETTE[i % PALETTE.length];
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + slice);
+        ctx.fill();
+        
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + slice/2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 12px Monaco";
+        ctx.fillText(c.toUpperCase(), radius - 20, 5);
+        ctx.restore();
+    });
+}
+
+function spinWheel() {
+    if(spinning || wheelCuisines.length === 0) return;
+    spinning = true;
+    const duration = 3000;
+    const start = performance.now();
+    const extraSpins = (Math.random() * 5 + 5) * Math.PI * 2;
+    const initialAngle = currentAngle;
+
+    function animate(now) {
+        let elapsed = now - start;
+        let progress = Math.min(elapsed / duration, 1);
+        let ease = 1 - Math.pow(1 - progress, 3);
+        
+        currentAngle = initialAngle + (extraSpins * ease);
+        drawWheel();
+
+        if(progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            spinning = false;
+            finalizeSpin();
+        }
+    }
+    requestAnimationFrame(animate);
+}
+
+function finalizeSpin() {
+    const slice = (Math.PI * 2) / wheelCuisines.length;
+    const normalized = (currentAngle % (Math.PI * 2));
+    const index = Math.floor((Math.PI * 2 - normalized) / slice) % wheelCuisines.length;
+    const result = wheelCuisines[index];
+
+    const resDiv = document.getElementById('wheelResult');
+    resDiv.innerHTML = `<div class="result-name">${result}</div><div class="cuisine-sub">fate has decided</div>`;
+    
+    spinHistory.unshift({name: result, date: new Date().toLocaleTimeString()});
+    if(spinHistory.length > 10) spinHistory.pop();
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory));
+    renderHistory();
+    
+    const actions = document.getElementById('resultActions');
+    actions.innerHTML = `<button class="btn btn-ghost" onclick="showRemoveModal('${result}')">Not feeling ${result}?</button>`;
+}
+
+// --- 10. Utils ---
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 function openImageViewer(src) {
-    document.getElementById('fullSizeImage').src = src;
-    document.getElementById('imageViewerModal').classList.add('show');
+    const modal = document.getElementById('imageViewerModal');
+    const fullImg = document.getElementById('fullSizeImage');
+    if (modal && fullImg) {
+        fullImg.src = src;
+        modal.classList.add('show');
+    }
 }
-function closeImageViewer() { document.getElementById('imageViewerModal').classList.remove('show'); }
+
+function closeImageViewer() {
+    const modal = document.getElementById('imageViewerModal');
+    if (modal) modal.classList.remove('show');
+}
+
+// Init
+syncWithFirebase();
+document.getElementById('ratingSlider').addEventListener('input', (e) => {
+    document.getElementById('ratingValueDisplay').textContent = parseFloat(e.target.value).toFixed(1);
+});
+document.getElementById('edit-rating-slider').addEventListener('input', (e) => {
+    document.getElementById('edit-rating-display').textContent = parseFloat(e.target.value).toFixed(1);
+});
