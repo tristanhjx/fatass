@@ -57,13 +57,18 @@ function getDynamicColor(value) {
         r = 230 + (255 - 230) * ratio; g = 50 + (180 - 50) * ratio; b = 50 + (50 - 50) * ratio;
     } else {
         const ratio = (v - 5) / 5;
-        r = 255 + (74 - 255) * ratio; g = 180 + (157 - 180) * ratio; b = 50 + (156 - 50) * ratio;
+        r = 255 + (74 - 255) * ratio; g = 180 + (157 - 180) * ratio; b = 50 + (50 - 50) * ratio;
     }
     return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
 function getTierColor(v) {
-    return getDynamicColor(v);
+    if (v >= 9.0) return '#c87941';
+    if (v >= 8.0) return '#4a9d9c';
+    if (v >= 7.0) return '#4a7a9d';
+    if (v >= 6.0) return '#6a6a6a';
+    if (v >= 4.5) return '#3a3a3a';
+    return '#c84a4a';
 }
 
 if (slider) {
@@ -125,17 +130,15 @@ function updateAuthorDropdowns() {
 // --- 5. Review Logic ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
+    const loc = document.getElementById('inp-loc').value.trim();
     const region = document.getElementById('inp-region').value;
-    const town = document.getElementById('inp-town').value.trim();
-    const link = document.getElementById('inp-link').value.trim();
     const cuisine = document.getElementById('inp-cuisine').value.trim();
     const author = document.getElementById('inp-author').value;
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
 
-    // Validation update: Ensure name, region, town, cuisine, and author are present
-    if (!name || !region || !town || !cuisine || !author) return showToast('Fill in all required fields!');
+    if (!name || !loc || !region || !cuisine || !author) return showToast('Fill in all required fields!');
 
     let finalImg = "";
     if (imgFile) {
@@ -143,11 +146,8 @@ async function submitReview() {
         finalImg = await resizeImage(imgFile);
     }
 
-    // Combine manual fields into a single location string for the DB
-    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
-
     const newReview = { 
-        name, loc, cuisine, author, rating, text, 
+        name, loc, region, cuisine, author, rating, text, 
         img: finalImg ? [finalImg] : [], 
         date: new Date().toISOString() 
     };
@@ -155,17 +155,13 @@ async function submitReview() {
     try {
         await db.collection('reviews').add(newReview);
         showToast('Review posted!');
-        
-        // Reset all fields
         document.getElementById('inp-name').value = '';
+        document.getElementById('inp-loc').value = '';
         document.getElementById('inp-region').value = '';
-        document.getElementById('inp-town').value = '';
-        document.getElementById('inp-link').value = '';
         document.getElementById('inp-cuisine').value = '';
         document.getElementById('inp-author').value = '';
         document.getElementById('inp-review').value = '';
         document.getElementById('inp-img').value = '';
-        
         showPage('reviews');
     } catch (e) {
         showToast('Upload failed!');
@@ -182,16 +178,6 @@ function renderReviews() {
     }
     grid.innerHTML = reviews.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-        
-        // Handle Map Link
-        let displayLoc = r.loc || "";
-        if (displayLoc.includes(' — ')) {
-            const parts = displayLoc.split(' — ');
-            const textPart = parts[0];
-            const urlPart = parts[1];
-            displayLoc = `${textPart} • <a href="${urlPart}" target="_blank" style="color:var(--teal); text-decoration:underline;">Map</a>`;
-        }
-
         return `
         <div class="rest-card">
             <div class="card-actions">
@@ -199,7 +185,7 @@ function renderReviews() {
             </div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
-            <div class="location">📍 ${displayLoc}</div>
+            <div class="location">📍 ${r.loc} (${r.region})</div>
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
@@ -218,6 +204,7 @@ function renderReviews() {
         </div>`;
     }).join('');
 }
+
 // --- 6. Tier List Logic ---
 function autoMapToTier(review) {
     let tier = 'F';
@@ -399,28 +386,11 @@ function openEditModal(id) {
     if (!r) return;
 
     document.getElementById('edit-name').value = r.name || "";
+    document.getElementById('edit-loc').value = r.loc || "";
+    document.getElementById('edit-region').value = r.region || "Central";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-author').value = r.author || "";
     document.getElementById('edit-review').value = r.text || "";
-
-    // Parse the stored location string back into parts for the modal
-    const locString = r.loc || "";
-    let town = "", region = "Central", link = "";
-
-    if (locString.includes(' (')) {
-        town = locString.split(' (')[0];
-        const remainder = locString.split(' (')[1];
-        region = remainder.split(')')[0];
-        if (remainder.includes(' — ')) {
-            link = remainder.split(' — ')[1];
-        }
-    } else {
-        town = locString;
-    }
-
-    document.getElementById('edit-town').value = town;
-    document.getElementById('edit-region').value = region;
-    document.getElementById('edit-link').value = link;
 
     const rating = r.rating || 7.0;
     const editSlider = document.getElementById('edit-rating-slider');
@@ -474,13 +444,6 @@ async function saveEdit() {
     if (!currentEditId) return;
     showToast('Saving...');
     
-    const region = document.getElementById('edit-region').value;
-    const town = document.getElementById('edit-town').value.trim();
-    const link = document.getElementById('edit-link').value.trim();
-
-    // Combine manual fields into the loc string
-    const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
-
     const fileInput = document.getElementById('edit-img-input');
     const newFiles = fileInput ? fileInput.files : [];
     let uploadedImages = [];
@@ -495,7 +458,8 @@ async function saveEdit() {
 
         const update = {
             name: document.getElementById('edit-name').value.trim(),
-            loc: loc,
+            loc: document.getElementById('edit-loc').value.trim(),
+            region: document.getElementById('edit-region').value,
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             author: document.getElementById('edit-author').value,
             text: document.getElementById('edit-review').value.trim(),
@@ -524,4 +488,56 @@ function openImageViewer(src) {
 function closeImageViewer() {
     const modal = document.getElementById('imageViewerModal');
     if (modal) modal.classList.remove('show');
+}
+
+// --- Map Logic ---
+let map, marker, autocomplete;
+let currentTargetForm = 'add';
+
+function openMapModal(formType) {
+    currentTargetForm = formType;
+    document.getElementById('mapModal').classList.add('show');
+    initMap();
+}
+
+function closeMapModal() {
+    document.getElementById('mapModal').classList.remove('show');
+}
+
+function initMap() {
+    const sg = { lat: 1.3521, lng: 103.8198 };
+    map = new google.maps.Map(document.getElementById("googleMap"), {
+        zoom: 12,
+        center: sg,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+            { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+            { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+            { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+            { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }
+        ]
+    });
+
+    marker = new google.maps.Marker({ map: map, draggable: true });
+
+    const input = document.getElementById("map-search");
+    autocomplete = new google.maps.places.Autocomplete(input);
+    autocomplete.bindTo("bounds", map);
+
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+        if (place.geometry.viewport) map.fitBounds(place.geometry.viewport);
+        else { map.setCenter(place.geometry.location); map.setZoom(17); }
+        marker.setPosition(place.geometry.location);
+    });
+}
+
+function confirmMapLocation() {
+    const place = autocomplete.getPlace();
+    const locString = place && place.name ? `${place.name}, ${place.formatted_address}` : "Custom Location";
+    const targetId = currentTargetForm === 'add' ? 'inp-loc' : 'edit-loc';
+    document.getElementById(targetId).value = locString;
+    closeMapModal();
 }
