@@ -171,7 +171,11 @@ function renderReviews() {
             <div class="snippet">${r.text}</div>
             
             <div class="image-gallery">
-                ${images.map(imgSrc => `<img src="${imgSrc}" class="review-img-thumb">`).join('')}
+                ${images.map(imgSrc => `
+                    <img src="${imgSrc}" 
+                         class="review-img-thumb" 
+                         onclick="openImageViewer('${imgSrc}')">
+                `).join('')}
             </div>
             
             <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
@@ -450,4 +454,16 @@ async function saveEdit() {
         showToast('Update failed');
         console.error(e);
     }
+}
+
+// --- Image Viewer Logic ---
+function openImageViewer(src) {
+    const modal = document.getElementById('imageViewerModal');
+    const fullImg = document.getElementById('fullSizeImage');
+    fullImg.src = src;
+    modal.classList.add('show');
+}
+
+function closeImageViewer() {
+    document.getElementById('imageViewerModal').classList.remove('show');
 }
