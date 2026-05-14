@@ -33,6 +33,18 @@
 
     <div id="page-reviews" class="page">
         <div class="page-hero"><h2>Reviews</h2><p>// what the crew has been eating //</p></div>
+        
+        <div class="filter-bar" style="margin-bottom: 20px; padding: 0 1rem;">
+            <select id="filter-region" onchange="renderReviews()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:8px 12px; font-family:var(--font); outline:none; width:100%; max-width:200px;">
+                <option value="All">All Regions</option>
+                <option value="North">North</option>
+                <option value="South">South</option>
+                <option value="East">East</option>
+                <option value="West">West</option>
+                <option value="Central">Central</option>
+            </select>
+        </div>
+    
         <div class="section-title">// all reviews</div>
         <div class="rest-grid" id="restGrid"></div>
     </div>
