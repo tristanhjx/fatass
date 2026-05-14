@@ -153,7 +153,11 @@ function renderReviews() {
         grid.innerHTML = '<p class="history-empty">No reviews yet.</p>';
         return;
     }
-    grid.innerHTML = reviews.map(r => `
+    grid.innerHTML = reviews.map(r => {
+        // Handle both old single-image data and new array data
+        const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
+        
+        return `
         <div class="rest-card">
             <div class="card-actions">
                 <button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button>
@@ -165,9 +169,14 @@ function renderReviews() {
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
             <div class="snippet">${r.text}</div>
-            ${r.img ? `<img src="${r.img}" class="review-img">` : ''}
+            
+            <div class="image-gallery">
+                ${images.map(imgSrc => `<img src="${imgSrc}" class="review-img-thumb">`).join('')}
+            </div>
+            
             <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
 // --- 6. Tier List Logic ---
