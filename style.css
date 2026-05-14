@@ -61,29 +61,31 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .snippet { color: var(--muted); font-size: 11px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .75rem; }
 .review-img { width: 100%; height: 180px; object-fit: cover; margin-top: 1rem; border: 1px solid var(--border); }
 
-/* --- 5. Action Icons (Button Fixes) --- */
+/* --- 5. Action Icons (FIXED) --- */
 .card-actions {
     position: absolute;
     top: 10px;
     right: 10px;
     display: flex;
     gap: 8px;
-    z-index: 10;
+    z-index: 50; /* Above card content */
 }
 
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
+    color: var(--text);
     cursor: pointer !important;
-    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    /* Dimensions to make the Edit button clickable */
+    /* SANITY CHECK: Explicit dimensions to fix unclickable edit button */
     width: 28px;
     height: 28px;
     padding: 0;
+    font-size: 12px;
+    border-radius: 4px;
 }
 
 .action-icon:hover {
@@ -91,19 +93,20 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
     transform: scale(1.1);
 }
 
-.edit-icon:hover { border-color: #f1c40f; color: #f1c40f; }
+.edit-btn:hover { border-color: #f1c40f; color: #f1c40f; }
 
-/* TRASHCAN: Original positioning preserved */
+/* TRASHCAN: Restored to bottom-right exactly as original */
 .delete-btn {
     position: absolute;
     bottom: 15px;
     right: 15px;
+    z-index: 50;
 }
 .delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
 
-/* Fix the cuisine tag so it doesn't slide under the buttons */
+/* Pushes tag away so it doesn't block the Edit button hitbox */
 .rest-card .tag {
-    margin-right: 80px; 
+    margin-right: 40px;
 }
 
 /* --- 6. Spin Wheel & Sidebar --- */
@@ -134,18 +137,17 @@ nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0
 .tier-items { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; flex: 1; background: var(--card); }
 .tier-chip { background: var(--bg3); border: 1px solid var(--border); padding: 6px 12px; font-size: 11px; letter-spacing: 1px; }
 
-/* --- 8. Add Review Form (Restored Layout) --- */
+/* --- 8. Add Review Form (RESTORED TO ORIGINAL STACK) --- */
 .form-card { background: var(--card); border: 1px solid var(--border); padding: 2rem; margin-top: 1rem; }
 .form-row { margin-bottom: 1.25rem; }
 .form-row label { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: .4rem; }
 .form-row input, .form-row select, .form-row textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 13px; padding: .6rem .8rem; outline: none; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
 .slider-container { display: flex; align-items: center; gap: 15px; }
 #ratingSlider { flex: 1; accent-color: var(--orange); cursor: pointer; }
 #ratingValueDisplay { font-size: 24px; font-weight: bold; min-width: 55px; text-align: right; }
 
-/* --- 9. Multi-Image & Viewer Logic --- */
+/* --- 9. Multi-Image & Viewer --- */
 .image-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 10px; }
 .review-img-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--border); cursor: pointer; transition: opacity 0.2s; }
 .review-img-thumb:hover { opacity: 0.8; }
