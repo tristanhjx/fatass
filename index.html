@@ -33,18 +33,6 @@
 
     <div id="page-reviews" class="page">
         <div class="page-hero"><h2>Reviews</h2><p>// what the crew has been eating //</p></div>
-        
-        <div class="filter-bar" style="margin-bottom: 20px; padding: 0 1rem;">
-            <select id="filter-region" onchange="renderReviews()" style="background:var(--bg3); color:var(--text); border:1px solid var(--border); padding:8px 12px; font-family:var(--font); outline:none; width:100%; max-width:200px;">
-                <option value="All">All Regions</option>
-                <option value="North">North</option>
-                <option value="South">South</option>
-                <option value="East">East</option>
-                <option value="West">West</option>
-                <option value="Central">Central</option>
-            </select>
-        </div>
-    
         <div class="section-title">// all reviews</div>
         <div class="rest-grid" id="restGrid"></div>
     </div>
@@ -106,23 +94,13 @@
             <div class="form-grid">
                 <div class="form-row"><label>Restaurant name</label><input type="text" id="inp-name" placeholder="e.g. Ah Kow Satay"/></div>
                 <div class="form-row">
-                    <label>Region</label>
-                    <select id="inp-region" style="width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); font-family: var(--font); font-size: 13px; padding: .6rem .8rem; outline: none;">
-                        <option value="">Select Region...</option>
-                        <option value="North">North</option>
-                        <option value="South">South</option>
-                        <option value="East">East</option>
-                        <option value="West">West</option>
-                        <option value="Central">Central</option>
-                    </select>
+                    <label>Location</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="inp-loc" placeholder="e.g. Toa Payoh" style="flex:1;">
+                        <button type="button" class="btn" style="padding: 0 15px;" onclick="openMapModal('inp-loc')">📍</button>
+                    </div>
                 </div>
             </div>
-    
-            <div class="form-grid">
-                <div class="form-row"><label>Location (Area Name)</label><input type="text" id="inp-loc" placeholder="e.g. Toa Payoh"/></div>
-                <div class="form-row"><label>Google Maps Link</label><input type="url" id="inp-maps-link" placeholder="Paste link here..."/></div>
-            </div>
-    
             <div class="form-grid">
                 <div class="form-row">
                     <label>Cuisine type</label>
@@ -135,7 +113,6 @@
                     <datalist id="list-authors"></datalist>
                 </div>
             </div>
-    
             <div class="form-row">
                 <label>Rating (0.0 - 10.0)</label>
                 <div class="slider-container">
@@ -143,7 +120,6 @@
                     <span id="ratingValueDisplay">7.0</span>
                 </div>
             </div>
-    
             <div class="form-row"><label>Review</label><textarea id="inp-review" placeholder="Worth the queue?"></textarea></div>
             <div class="form-row"><label>Photo</label><input type="file" id="inp-img" accept="image/*"></div>
             <button class="btn" onclick="submitReview()">Post Review</button>
@@ -165,7 +141,13 @@
         <div class="modal" style="width: 500px; max-width: 95vw;">
             <h3>Edit Review</h3>
             <div class="form-row"><label>Restaurant</label><input type="text" id="edit-name"></div>
-            <div class="form-row"><label>Location</label><input type="text" id="edit-loc"></div>
+            <div class="form-row">
+                <label>Location</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="edit-loc" style="flex:1;">
+                    <button type="button" class="btn" style="padding: 0 15px;" onclick="openMapModal('edit-loc')">📍</button>
+                </div>
+            </div>
             <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
             <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
          
@@ -196,7 +178,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <script>
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDQjAiwQf9la93veXb7N_AUzWBjNkWnh4s",
             authDomain: "fatass-f5c0e.firebaseapp.com",
@@ -207,7 +188,6 @@
             measurementId: "G-PRR74C35TN"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
     </script>
@@ -217,6 +197,20 @@
     <div class="modal-bg" id="imageViewerModal" onclick="closeImageViewer()">
         <div class="image-viewer-content">
             <img id="fullSizeImage" src="" alt="Full size review">
+        </div>
+    </div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+
+    <div class="modal-bg" id="mapModal">
+        <div class="modal" style="width: 500px; max-width: 95vw;">
+            <h3>Select Location</h3>
+            <input type="text" id="map-search" class="modal-input" placeholder="Search for a restaurant or place..." style="width:100%; margin-bottom:10px; padding:8px; background:#1e1e1e; border:1px solid #3a3a3a; color:white;">
+            <div id="googleMap" style="width: 100%; height: 300px; margin: 10px 0; background: #333;"></div>
+            <div class="modal-btns">
+                <button class="btn" onclick="confirmMapLocation()">Confirm</button>
+                <button class="btn btn-ghost" onclick="closeMapModal()">Cancel</button>
+            </div>
         </div>
     </div>
     
