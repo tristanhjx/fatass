@@ -116,15 +116,32 @@ async function submitReview() {
     }
 }
 
-// --- 6. Review Rendering ---
+// --- Updated Color Logic ---
 function getRatingColor(val) {
-    if (val >= 9.0) return '#c87941'; 
-    if (val >= 8.0) return '#4a9d9c'; 
-    if (val >= 7.0) return '#4a7a9d'; 
-    if (val >= 6.0) return '#6a6a6a'; 
-    if (val >= 4.5) return '#3a3a3a'; 
-    return '#c84a4a'; 
+    const v = parseFloat(val);
+    if (v >= 9.0) return '#3498db'; // Blue (God tier)
+    if (v >= 7.5) return '#2ecc71'; // Green (Excellent)
+    if (v >= 5.0) return '#f1c40f'; // Yellow (Average)
+    return '#ff4d4d';                // Red (Bad)
 }
+
+// --- Update Slider Listeners ---
+// For the Add Review page
+if (slider) {
+    slider.oninput = () => {
+        const val = parseFloat(slider.value).toFixed(1);
+        display.textContent = val;
+        display.style.color = getRatingColor(val);
+    };
+}
+
+// Inside your openEditModal function, update the listener:
+// Find the section in script.js for edit-rating-slider and update it to:
+es.oninput = () => {
+    const val = parseFloat(es.value).toFixed(1);
+    ed.textContent = val;
+    ed.style.color = getRatingColor(val);
+};
 
 function renderReviews() {
     const grid = document.getElementById('restGrid');
