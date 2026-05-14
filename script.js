@@ -152,34 +152,39 @@ async function submitReview() {
 
 function renderReviews() {
     const grid = document.getElementById('restGrid');
-    const regionFilter = document.getElementById('filter-region').value;
+    const regionFilter = document.getElementById('filter-region') ? document.getElementById('filter-region').value : 'All';
     if (!grid) return;
 
+    // Filter reviews based on region
     let filtered = reviews;
     if (regionFilter !== 'All') {
         filtered = reviews.filter(r => r.region === regionFilter);
     }
 
     if (filtered.length === 0) {
-        grid.innerHTML = '<p class="history-empty">No reviews in this region.</p>';
+        grid.innerHTML = '<p style="padding:2rem; color:var(--muted);">// no reviews found here</p>';
         return;
     }
 
     grid.innerHTML = filtered.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-        // Create link for location if it exists
-        const locHTML = r.mapsLink 
-            ? `<a href="${r.mapsLink}" target="_blank" class="location" style="text-decoration:none; color:var(--teal);">📍 ${r.loc} (${r.region || 'N/A'})</a>`
-            : `<div class="location">📍 ${r.loc} (${r.region || 'N/A'})</div>`;
         
+        // Handle the Google Maps Link: If a link exists, make the location clickable
+        const locationDisplay = r.mapsLink 
+            ? `<a href="${r.mapsLink}" target="_blank" style="color:var(--teal); text-decoration:none;">📍 ${r.loc || 'Unknown'}</a>`
+            : `📍 ${r.loc || 'Unknown'}`;
+
         return `
         <div class="rest-card">
             <div class="card-actions">
-                <button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button>
+                <button class="action-icon" onclick="openEditModal('${r.id}')">✏️</button>
             </div>
-            <div class="tag">${r.cuisine}</div>
+            <div class="tag">${r.cuisine || 'Cuisine'}</div>
+            <div class="region-tag" style="font-size:10px; color:var(--muted); margin-bottom:5px;">${r.region || 'Uncategorized'}</div>
             <h3>${r.name}</h3>
-            ${locHTML}
+            <div class="location" style="margin-bottom:10px; font-size:11px;">
+                ${locationDisplay}
+            </div>
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
