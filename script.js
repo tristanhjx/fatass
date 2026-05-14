@@ -49,15 +49,13 @@ function syncWithFirebase() {
         renderReviews();
         renderTierBoard();
         updateCuisineDatalist();
-        updateAuthorDropdowns(); // Dynamic population of your name list
+        updateAuthorDropdowns(); // Dynamic population of the name list
     });
 }
 
-// --- 4. Core Logic: Author Dropdown Population ---
+// --- 4. Author Dropdown Logic ---
 function updateAuthorDropdowns() {
-    // Extract unique authors from the database
     const uniqueAuthors = [...new Set(reviews.map(r => r.author).filter(Boolean))].sort();
-    
     const addSelect = document.getElementById('inp-author');
     const editSelect = document.getElementById('edit-author');
 
@@ -95,13 +93,12 @@ function showPage(pageId) {
 // --- 6. Review CRUD ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
-    const author = document.getElementById('inp-author').value; // Get from select
+    const author = document.getElementById('inp-author').value; // Updated to use dropdown
     const cuisine = document.getElementById('inp-cuisine').value.trim();
     const rating = parseFloat(document.getElementById('ratingSlider').value);
     const text = document.getElementById('inp-review').value.trim();
     const imgFile = document.getElementById('inp-img').files[0];
     
-    // Location handling
     const region = document.getElementById('inp-region').value;
     const town = document.getElementById('inp-town').value.trim();
     const link = document.getElementById('inp-link').value.trim();
@@ -153,7 +150,7 @@ async function deleteReview(id) {
     }
 }
 
-// --- 7. Modal Logic (Edit/Image) ---
+// --- 7. Modal Logic ---
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(item => item.id === id);
@@ -161,12 +158,11 @@ function openEditModal(id) {
 
     document.getElementById('edit-name').value = r.name;
     document.getElementById('edit-cuisine').value = r.cuisine;
-    document.getElementById('edit-author').value = r.author || ""; // Set select value
+    document.getElementById('edit-author').value = r.author || ""; // Updated for dropdown
     document.getElementById('edit-review').value = r.text;
     document.getElementById('edit-rating-slider').value = r.rating;
     document.getElementById('edit-rating-display').textContent = r.rating.toFixed(1);
 
-    // Parse location string back to fields
     let region = ""; let town = ""; let link = "";
     if (r.loc) {
         const parts = r.loc.split(' — ');
@@ -227,7 +223,7 @@ async function saveEdit() {
 
         const update = {
             name: document.getElementById('edit-name').value.trim(),
-            author: document.getElementById('edit-author').value, // Save author
+            author: document.getElementById('edit-author').value, // Updated for dropdown
             loc: loc,
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
@@ -386,7 +382,7 @@ function finalizeSpin() {
     actions.innerHTML = `<button class="btn btn-ghost" onclick="showRemoveModal('${result}')">Not feeling ${result}?</button>`;
 }
 
-// --- 10. Utils ---
+// --- 10. Utils & Image Viewer ---
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -408,7 +404,7 @@ function closeImageViewer() {
     if (modal) modal.classList.remove('show');
 }
 
-// Init
+// --- 11. Initializers ---
 syncWithFirebase();
 document.getElementById('ratingSlider').addEventListener('input', (e) => {
     document.getElementById('ratingValueDisplay').textContent = parseFloat(e.target.value).toFixed(1);
