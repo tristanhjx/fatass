@@ -134,6 +134,7 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 
 /* Container for the buttons at the top right */
 /* Action Icons */
+/* --- Action Icons & Buttons --- */
 .rest-card { 
     position: relative; 
 } 
@@ -144,54 +145,56 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     right: 10px;
     display: flex;
     gap: 8px;
-    z-index: 10;
+    z-index: 100; /* High z-index to ensure it's on top */
 }
 
 .action-icon {
     background: var(--bg3);
     border: 1px solid var(--border);
     color: var(--text);
+    padding: 0; /* Changed to 0 so flex centering handles the emoji */
+    border-radius: 4px;
     cursor: pointer !important;
-    padding: 4px;
     font-size: 14px;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
-    /* Ensure the button has a physical size */
-    width: 28px;
-    height: 28px;
-    border-radius: 4px;
+    /* PHYSICAL SIZE - REQUIRED FOR CLICKABILITY */
+    width: 32px; 
+    height: 32px;
 }
 
-/* Fixed the selector name to match your HTML/JS */
-.edit-btn:hover { 
-    border-color: var(--teal); 
-    color: var(--teal); 
+.action-icon:hover {
+    background: var(--bg);
     transform: scale(1.1);
 }
 
+.edit-btn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+}
+
 .delete-btn {
-    /* If you want the trashcan separate at the bottom */
     position: absolute;
     bottom: 15px;
     right: 15px;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
+    z-index: 100;
 }
 
 .delete-btn:hover { 
     border-color: #c84a4a; 
     color: #c84a4a; 
-    transform: scale(1.1);
 }
 
-/* Fix the cuisine tag so it doesn't slide under the buttons */
+/* Fix the cuisine tag so it doesn't overlap the buttons */
 .rest-card .tag {
     margin-right: 80px; 
 }
 
-/* --- Multi-image display & Modals --- */
+/* --- Image Gallery --- */
 .image-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -205,14 +208,10 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     object-fit: cover;
     border: 1px solid var(--border);
     cursor: pointer;
-    transition: opacity 0.2s;
 }
 
-.review-img-thumb:hover {
-    opacity: 0.8;
-}
+.review-img-thumb:hover { opacity: 0.8; }
 
-/* Edit Modal Image Management */
 .edit-img-wrapper {
     position: relative;
     width: 80px;
