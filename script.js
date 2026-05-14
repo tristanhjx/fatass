@@ -361,35 +361,37 @@ async function promptDeleteReview(id) {
 }
 
 // --- Edit Functions ---
+// Initialize the edit slider listener (add this near your other slider logic)
+const editSlider = document.getElementById('edit-rating-slider');
+const editDisplay = document.getElementById('edit-rating-display');
+
+if (editSlider) {
+    editSlider.addEventListener('input', () => {
+        const v = parseFloat(editSlider.value).toFixed(1);
+        const newColor = getDynamicColor(v); // Reuses your color logic
+        editDisplay.textContent = v;
+        editDisplay.style.color = newColor;
+        editSlider.style.accentColor = newColor;
+    });
+}
+
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(review => review.id === id);
     
-    // Fill text fields
-    document.getElementById('edit-name').value = r.name;
-    document.getElementById('edit-loc').value = r.loc;
-    document.getElementById('edit-cuisine').value = r.cuisine;
-    document.getElementById('edit-review').value = r.text;
+    // ... (Keep your previous code for name, loc, cuisine, text) ...
 
-    // Handle Image Previews
-    const container = document.getElementById('edit-image-preview-container');
-    container.innerHTML = '';
+    // Initialize the slider with the existing rating
+    const rating = r.rating || 7.0;
+    editSlider.value = rating;
+    editDisplay.textContent = rating.toFixed(1);
     
-    // Normalize images to an array (handles legacy single-string data)
-    const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-    
-    images.forEach((imgSrc, index) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'edit-img-wrapper';
-        wrapper.innerHTML = `
-            <img src="${imgSrc}">
-            <button class="remove-img-btn" onclick="removeImageFromEdit(${index})">✕</button>
-        `;
-        container.appendChild(wrapper);
-    });
+    // Apply colors immediately
+    const initialColor = getDynamicColor(rating);
+    editDisplay.style.color = initialColor;
+    editSlider.style.accentColor = initialColor;
 
-    // Store the current images temporarily for editing
-    window.tempEditImages = [...images];
+    // ... (Keep your previous code for image management) ...
     
     document.getElementById('editModal').classList.add('show');
 }
@@ -442,17 +444,16 @@ async function saveEdit() {
         loc: document.getElementById('edit-loc').value,
         cuisine: document.getElementById('edit-cuisine').value,
         text: document.getElementById('edit-review').value,
-        img: finalImages // Update the image field with the new array
+        rating: parseFloat(editSlider.value), // Capture the new rating
+        img: finalImages 
     };
 
     try {
         await db.collection('reviews').doc(currentEditId).update(update);
         showToast('Updated successfully');
-        document.getElementById('edit-img-input').value = ''; // Clear input
         closeEditModal();
     } catch (e) {
         showToast('Update failed');
-        console.error(e);
     }
 }
 
