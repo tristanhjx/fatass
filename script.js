@@ -113,8 +113,6 @@ async function submitReview() {
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
-    const mapsLink = document.getElementById('inp-maps-link').value.trim();
-    const region = document.getElementById('inp-region').value;
 
     if (!name || !cuisine || !author) return showToast('Fill in the basics!');
 
@@ -124,17 +122,10 @@ async function submitReview() {
         finalImg = await resizeImage(imgFile);
     }
 
-    const newReview = {
-    name: document.getElementById('inp-name').value.trim(),
-    loc: document.getElementById('inp-loc').value.trim(),
-    region: document.getElementById('inp-region').value, // Capture Region
-    mapsLink: document.getElementById('inp-maps-link').value.trim(), // Capture Link
-    cuisine: document.getElementById('inp-cuisine').value.trim(),
-    author: document.getElementById('inp-author').value.trim(),
-    rating: parseFloat(document.getElementById('ratingSlider').value),
-    text: document.getElementById('inp-review').value.trim(),
-    img: finalImg, 
-    date: new Date().toISOString()
+    const newReview = { 
+        name, loc, cuisine, author, rating, text, 
+        img: finalImg, 
+        date: new Date().toISOString() 
     };
 
     try {
@@ -146,8 +137,6 @@ async function submitReview() {
         document.getElementById('inp-cuisine').value = '';
         document.getElementById('inp-review').value = '';
         document.getElementById('inp-img').value = '';
-        document.getElementById('inp-maps-link').value = '';
-        document.getElementById('inp-region').value = '';
         
         showPage('reviews');
     } catch (e) {
@@ -158,52 +147,37 @@ async function submitReview() {
 
 function renderReviews() {
     const grid = document.getElementById('restGrid');
-    const regionFilter = document.getElementById('filter-region') ? document.getElementById('filter-region').value : 'All';
     if (!grid) return;
-
-    // Filter reviews based on region
-    let filtered = reviews;
-    if (regionFilter !== 'All') {
-        filtered = reviews.filter(r => r.region === regionFilter);
-    }
-
-    if (filtered.length === 0) {
-        grid.innerHTML = '<p style="padding:2rem; color:var(--muted);">// no reviews found here</p>';
+    if (reviews.length === 0) {
+        grid.innerHTML = '<p class="history-empty">No reviews yet.</p>';
         return;
     }
-
-    grid.innerHTML = filtered.map(r => {
+    grid.innerHTML = reviews.map(r => {
+        // Handle both old single-image data and new array data
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
         return `
         <div class="rest-card">
             <div class="card-actions">
-                <button class="action-icon edit-btn" onclick="openEditModal('${r.id}')" title="Edit">✏️</button>
-                <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')" title="Delete">🗑️</button>
+                <button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button>
             </div>
-            
-            <div class="tag">${r.cuisine || 'Cuisine'}</div>
-            <div class="region-tag" style="font-size:10px; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;">
-                ${r.region || 'Uncategorized'}
-            </div>
-            
-            <h3 style="margin-top: 5px;">${r.name}</h3>
-            
-            <div class="location" style="margin-bottom:10px; font-size:11px;">
-                ${r.mapsLink 
-                    ? `<a href="${r.mapsLink}" target="_blank" style="color:var(--teal); text-decoration:none; position:relative; z-index:5;">📍 ${r.loc || 'View Map'}</a>`
-                    : `📍 ${r.loc || 'Unknown'}`}
-            </div>
-        
+            <div class="tag">${r.cuisine}</div>
+            <h3>${r.name}</h3>
+            <div class="location">📍 ${r.loc}</div>
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
-            
             <div class="snippet">${r.text}</div>
             
             <div class="image-gallery">
-                ${images.map(imgSrc => `<img src="${imgSrc}" class="review-img-thumb" onclick="openImageViewer('${imgSrc}')">`).join('')}
+                ${images.map(imgSrc => `
+                    <img src="${imgSrc}" 
+                         class="review-img-thumb" 
+                         onclick="openImageViewer('${imgSrc}')">
+                `).join('')}
             </div>
+            
+            <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
         </div>`;
     }).join('');
 }
@@ -393,8 +367,6 @@ function openEditModal(id) {
     document.getElementById('edit-loc').value = r.loc || "";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
-    document.getElementById('edit-maps-link').value = r.mapsLink || "";
-    document.getElementById('edit-region').value = r.region || "Central";
 
     const rating = r.rating || 7.0;
     const editSlider = document.getElementById('edit-rating-slider');
@@ -470,8 +442,6 @@ async function saveEdit() {
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
-            mapsLink: document.getElementById('edit-maps-link').value.trim(),
-            region: document.getElementById('edit-region').value,
             img: [...(window.tempEditImages || []), ...uploadedImages]
         };
 
@@ -496,4 +466,64 @@ function openImageViewer(src) {
 function closeImageViewer() {
     const modal = document.getElementById('imageViewerModal');
     if (modal) modal.classList.remove('show');
+}
+
+// gmaps
+let map, autocomplete, marker;
+let activeLocationInputId = ''; // Tracks which field to fill (add or edit)
+
+function openMapModal(inputId) {
+    activeLocationInputId = inputId;
+    document.getElementById('mapModal').classList.add('show');
+    initMap();
+}
+
+function closeMapModal() {
+    document.getElementById('mapModal').classList.remove('show');
+}
+
+function initMap() {
+    const defaultPos = { lat: 1.3521, lng: 103.8198 }; // Default to Singapore
+    
+    map = new google.maps.Map(document.getElementById("googleMap"), {
+        center: defaultPos,
+        zoom: 13,
+        styles: [ { "stylers": [ { "invert_lightness": true }, { "hue": "#ffbb00" }, { "saturation": -100 } ] } ] // Dark Mode Map
+    });
+
+    marker = new google.maps.Marker({
+        map: map,
+        draggable: true,
+        position: defaultPos
+    });
+
+    const input = document.getElementById("map-search");
+    autocomplete = new google.maps.places.Autocomplete(input);
+    autocomplete.bindTo("bounds", map);
+
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+
+        if (place.geometry.viewport) map.fitBounds(place.geometry.viewport);
+        else {
+            map.setCenter(place.geometry.location);
+            map.setZoom(17);
+        }
+        marker.setPosition(place.geometry.location);
+    });
+}
+
+function confirmMapLocation() {
+    const place = autocomplete.getPlace();
+    const targetInput = document.getElementById(activeLocationInputId);
+    
+    if (place && place.formatted_address) {
+        targetInput.value = place.name + ", " + place.formatted_address;
+    } else if (document.getElementById('map-search').value) {
+        targetInput.value = document.getElementById('map-search').value;
+    }
+    
+    closeMapModal();
+    document.getElementById('map-search').value = ''; // Clear search for next time
 }
