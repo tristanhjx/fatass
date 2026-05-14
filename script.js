@@ -113,6 +113,8 @@ async function submitReview() {
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
+    const mapsLink = document.getElementById('inp-maps-link').value.trim();
+    const region = document.getElementById('inp-region').value;
 
     if (!name || !cuisine || !author) return showToast('Fill in the basics!');
 
@@ -124,6 +126,7 @@ async function submitReview() {
 
     const newReview = { 
         name, loc, cuisine, author, rating, text, 
+        mapsLink, region, // Added new fields
         img: finalImg, 
         date: new Date().toISOString() 
     };
@@ -137,6 +140,8 @@ async function submitReview() {
         document.getElementById('inp-cuisine').value = '';
         document.getElementById('inp-review').value = '';
         document.getElementById('inp-img').value = '';
+        document.getElementById('inp-maps-link').value = '';
+        document.getElementById('inp-region').value = '';
         
         showPage('reviews');
     } catch (e) {
