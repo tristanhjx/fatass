@@ -1,237 +1,431 @@
-/* --- 1. Rating Color Logic (Updated to your new scale) --- */
-function getRatingColor(val) {
-    const v = parseFloat(val);
-    if (v >= 9.0) return '#3498db'; // Blue
-    if (v >= 7.5) return '#2ecc71'; // Green
-    if (v >= 5.0) return '#f1c40f'; // Yellow
-    return '#ff4d4d';                // Red
-}
-
-/* --- 2. Review Rendering (Fixed Map Link) --- */
-function renderReviews() {
-    const grid = document.getElementById('restGrid');
-    if (!grid) return;
-    grid.innerHTML = reviews.map(r => {
-        const rCol = getRatingColor(r.rating);
-        return `
-            <div class="rest-card">
-                <div class="card-actions">
-                    <button class="action-icon" onclick="openEditModal('${r.id}')">✏️</button>
-                </div>
-                <div class="tag">${r.cuisine}</div>
-                <h3>${r.name}</h3>
-                <div class="location">
-                    📍 ${r.region} — ${r.loc}
-                    ${r.mapsLink ? `<a href="${r.mapsLink}" target="_blank" style="margin-left:5px; text-decoration:underline;">map</a>` : ''}
-                </div>
-                <div class="rating-val" style="color: ${rCol}">${r.rating.toFixed(1)} / 10</div>
-                <div class="snippet">"${r.text}"</div>
-                <div class="author-tag">— ${r.author}</div>
-                <button class="action-icon delete-btn" onclick="deleteReview('${r.id}')">🗑️</button>
-            </div>
-        `;
-    }).join('');
-}
-
-/* --- 3. Restored Wheel Logic (Untouched) --- */
-function initWheel() {
-    const cuisines = getCuisines();
-    const canvas = document.getElementById('wheelCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const size = canvas.width;
-    const center = size / 2;
-    const arc = (Math.PI * 2) / cuisines.length;
-
-    ctx.clearRect(0, 0, size, size);
-    cuisines.forEach((c, i) => {
-        const angle = currentAngle + i * arc;
-        ctx.fillStyle = PALETTE[i % PALETTE.length];
-        ctx.beginPath();
-        ctx.moveTo(center, center);
-        ctx.arc(center, center, center - 10, angle, angle + arc);
-        ctx.lineTo(center, center);
-        ctx.fill();
-        ctx.strokeStyle = '#252525';
-        ctx.stroke();
-
-        ctx.save();
-        ctx.translate(center, center);
-        ctx.rotate(angle + arc / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 12px Monaco";
-        ctx.fillText(c.toUpperCase(), center - 30, 5);
-        ctx.restore();
+// --- 1. Photo Optimization Helper ---
+async function resizeImage(file, maxWidth = 1024) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // Export as compact JPEG
+                resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+            };
+        };
     });
-    updateCuisineLists();
-    renderHistory();
 }
 
-// --- 4. Firestore Logic ---
-db.collection('reviews').orderBy('date', 'desc').onSnapshot(snap => {
-    reviews = [];
-    snap.forEach(doc => reviews.push({ id: doc.id, ...doc.data() }));
-    updateDatalists();
-    if (document.getElementById('page-reviews').classList.contains('active')) renderReviews();
-    if (document.getElementById('page-tier').classList.contains('active')) renderTierList();
-});
+// --- 2. Constants & State ---
+const WHEEL_CUISINES_KEY = 'fatass_wheel_cuisines_v3';
+const HISTORY_KEY = 'fatass_history_v3';
 
-function updateDatalists() {
-    const cuisines = [...new Set(reviews.map(r => r.cuisine))];
-    const authors = [...new Set(reviews.map(r => r.author))];
-    const cList = document.getElementById('list-cuisines');
-    const aList = document.getElementById('list-authors');
-    if (cList) cList.innerHTML = cuisines.map(c => `<option value="${c}">`).join('');
-    if (aList) aList.innerHTML = authors.map(a => `<option value="${a}">`).join('');
-}
+let reviews = []; 
+let tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
+let spinHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
 
-// --- 5. Add Review Logic ---
+let spinning = false;
+let currentAngle = 0;
+let pendingRemove = null;
+let editMode = false;
+
+const PALETTE = ['#c87941', '#4a9d9c', '#b05070', '#c8a041', '#8a6cc8', '#41a06c', '#6c8ac8', '#c85a5a', '#5a9ec8', '#9d7a4a'];
+let wheelCuisines = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY)) || [
+    {label:'Hawker', color:'#c87941'}, {label:'Japanese', color:'#4a9d9c'}, {label:'Korean', color:'#b05070'},
+    {label:'Chinese', color:'#c8a041'}, {label:'Indian', color:'#8a6cc8'}, {label:'Thai', color:'#41a06c'},
+    {label:'Western', color:'#6c8ac8'}, {label:'Italian', color:'#c85a5a'}
+];
+
+// --- 3. UI & Color Logic ---
 const slider = document.getElementById('ratingSlider');
 const display = document.getElementById('ratingValueDisplay');
-if (slider) {
-    slider.oninput = () => display.textContent = parseFloat(slider.value).toFixed(1);
+
+function getDynamicColor(value) {
+    const v = parseFloat(value);
+    let r, g, b;
+    if (v <= 5) {
+        const ratio = v / 5;
+        r = 230 + (255 - 230) * ratio; g = 50 + (180 - 50) * ratio; b = 50 + (50 - 50) * ratio;
+    } else {
+        const ratio = (v - 5) / 5;
+        r = 255 + (74 - 255) * ratio; g = 180 + (157 - 180) * ratio; b = 50 + (156 - 50) * ratio;
+    }
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
+// In script.js, make sure this function exists:
+function getTierColor(v) {
+    return getDynamicColor(v); // This links it to the slider math
+}
+
+// And verify renderReviews uses it:
+// ... `<div class="rating-val" style="color:${getTierColor(r.rating)}">` ...
+
+if (slider) {
+    const updateSlider = () => {
+        const v = parseFloat(slider.value).toFixed(1);
+        const newColor = getDynamicColor(v);
+        display.textContent = v;
+        display.style.color = newColor;
+        slider.style.accentColor = newColor;
+    };
+    slider.addEventListener('input', updateSlider);
+    updateSlider();
+}
+
+// --- 4. Navigation & Firebase Sync ---
+function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    
+    const navMap = { 'reviews': 0, 'spin': 1, 'tier': 2, 'add': 3 };
+    if (id in navMap) document.querySelectorAll('.nav-btn')[navMap[id]].classList.add('active');
+
+    if (id === 'spin') { renderWheel(); renderHistory(); renderCuisineView(); renderCuisineEditList(); }
+}
+
+function syncWithFirebase() {
+    db.collection('reviews').orderBy('date', 'desc').onSnapshot(snapshot => {
+        reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
+        reviews.forEach(r => autoMapToTier(r));
+        renderReviews();
+        renderTierBoard();
+    });
+}
+
+// --- 5. Review Logic ---
 async function submitReview() {
     const name = document.getElementById('inp-name').value.trim();
-    const region = document.getElementById('inp-region').value;
     const loc = document.getElementById('inp-loc').value.trim();
-    const mapsLink = document.getElementById('inp-maps-link').value.trim();
     const cuisine = document.getElementById('inp-cuisine').value.trim();
     const author = document.getElementById('inp-author').value.trim();
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
 
-    if (!name || !cuisine || !author) return showToast('Fill in Name, Cuisine, and Author');
+    if (!name || !cuisine || !author) return showToast('Fill in the basics!');
 
     let finalImg = "";
     if (imgFile) {
-        showToast('Compressing image...');
+        showToast('Compressing photo...');
         finalImg = await resizeImage(imgFile);
     }
 
-    const newReview = {
-        name, region, loc, mapsLink, cuisine, author, text, rating,
-        img: finalImg ? [finalImg] : [],
-        date: new Date().toISOString()
+    const newReview = { 
+        name, loc, cuisine, author, rating, text, 
+        img: finalImg, 
+        date: new Date().toISOString() 
     };
 
     try {
         await db.collection('reviews').add(newReview);
         showToast('Review posted!');
-        ['inp-name', 'inp-loc', 'inp-maps-link', 'inp-cuisine', 'inp-author', 'inp-review', 'inp-img'].forEach(id => {
-            document.getElementById(id).value = '';
-        });
-        slider.value = 7.0;
-        display.textContent = "7.0";
+        
+        document.getElementById('inp-name').value = '';
+        document.getElementById('inp-loc').value = '';
+        document.getElementById('inp-cuisine').value = '';
+        document.getElementById('inp-review').value = '';
+        document.getElementById('inp-img').value = '';
+        
         showPage('reviews');
     } catch (e) {
-        showToast('Error posting review');
+        showToast('Upload failed!');
+        console.error(e);
     }
-}
-
-// --- 6. Review Rendering ---
-function getRatingColor(val) {
-    if (val >= 9.0) return '#c87941'; 
-    if (val >= 8.0) return '#4a9d9c'; 
-    if (val >= 7.0) return '#4a7a9d'; 
-    if (val >= 6.0) return '#6a6a6a'; 
-    if (val >= 4.5) return '#3a3a3a'; 
-    return '#c84a4a'; 
 }
 
 function renderReviews() {
     const grid = document.getElementById('restGrid');
     if (!grid) return;
+    if (reviews.length === 0) {
+        grid.innerHTML = '<p class="history-empty">No reviews yet.</p>';
+        return;
+    }
     grid.innerHTML = reviews.map(r => {
-        const rCol = getRatingColor(r.rating);
+        // Handle both old single-image data and new array data
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
         return `
-            <div class="rest-card">
-                <div class="card-actions">
-                    <button class="action-icon edit-btn" onclick="openEditModal('${r.id}')">✏️</button>
-                </div>
-                <div class="tag">${r.cuisine}</div>
-                <h3>${r.name}</h3>
-                <div class="location">
-                    📍 ${r.region} — ${r.loc}
-                    ${r.mapsLink ? `<a href="${r.mapsLink}" target="_blank" style="margin-left:5px; text-decoration:underline;">map</a>` : ''}
-                </div>
-                <div class="rating-val" style="color: ${rCol}">${r.rating.toFixed(1)} / 10</div>
-                <div class="snippet">"${r.text}"</div>
-                <div class="author-tag">— ${r.author}</div>
-                
-                ${images.length > 0 ? `
-                    <div class="image-gallery">
-                        ${images.map(imgSrc => `<img src="${imgSrc}" class="review-img-thumb" onclick="openImageViewer('${imgSrc}')">`).join('')}
-                    </div>
-                ` : ''}
-                
-                <button class="action-icon delete-btn" onclick="deleteReview('${r.id}')">🗑️</button>
+        <div class="rest-card">
+            <div class="card-actions">
+                <button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button>
             </div>
-        `;
+            <div class="tag">${r.cuisine}</div>
+            <h3>${r.name}</h3>
+            <div class="location">📍 ${r.loc}</div>
+            <div class="rating-val" style="color:${getTierColor(r.rating)}">
+                ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
+            </div>
+            <div class="snippet">${r.text}</div>
+            
+            <div class="image-gallery">
+                ${images.map(imgSrc => `
+                    <img src="${imgSrc}" 
+                         class="review-img-thumb" 
+                         onclick="openImageViewer('${imgSrc}')">
+                `).join('')}
+            </div>
+            
+            <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
+        </div>`;
     }).join('');
 }
 
-async function deleteReview(id) {
-    if (confirm('Delete this review permanently?')) {
-        await db.collection('reviews').doc(id).delete();
-        showToast('Review deleted');
+// --- 6. Tier List Logic ---
+function autoMapToTier(review) {
+    let tier = 'F';
+    const v = review.rating;
+    if (v >= 9.0) tier = 'S';
+    else if (v >= 8.0) tier = 'A';
+    else if (v >= 7.0) tier = 'B';
+    else if (v >= 6.0) tier = 'C';
+    else if (v >= 4.5) tier = 'D';
+
+    if (!tierData[tier].some(x => x.name === review.name)) {
+        tierData[tier].push({ name: review.name });
     }
 }
 
-// --- 7. Edit Logic ---
-let currentEditId = null;
+function renderTierBoard() {
+    ['S', 'A', 'B', 'C', 'D', 'F'].forEach(t => {
+        const el = document.getElementById('tier-' + t);
+        if (!el) return;
+        el.innerHTML = tierData[t].length 
+            ? tierData[t].map(x => `<div class="tier-chip">${x.name}</div>`).join('')
+            : '<span class="history-empty">empty</span>';
+    });
+}
 
-async function openEditModal(id) {
+// --- 7. Spin the Wheel Logic ---
+function renderWheel() {
+    const canvas = document.getElementById('wheelCanvas');
+    if (canvas) drawWheel(canvas.getContext('2d'), currentAngle);
+}
+
+function drawWheel(ctx, angle) {
+    const cx = 170, cy = 170, r = 155, n = wheelCuisines.length;
+    if (!n) return;
+    const arc = 2 * Math.PI / n;
+    ctx.clearRect(0, 0, 340, 340);
+    wheelCuisines.forEach((c, i) => {
+        const start = angle + i * arc, end = start + arc;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, start, end); ctx.closePath();
+        ctx.fillStyle = c.color; ctx.fill();
+        ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(start + arc / 2);
+        ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Monaco,monospace';
+        ctx.fillText(c.label, r - 10, 4); ctx.restore();
+    });
+    ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = '#1e1e1e'; ctx.fill();
+    ctx.strokeStyle = '#c87941'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - r - 5); ctx.lineTo(cx - 10, cy - r + 14); ctx.lineTo(cx + 10, cy - r + 14);
+    ctx.closePath(); ctx.fillStyle = '#e8e4dc'; ctx.fill();
+}
+
+function spinWheel() {
+    if (spinning || !wheelCuisines.length) return;
+    spinning = true;
+    document.getElementById('spinBtn').disabled = true;
+    const canvas = document.getElementById('wheelCanvas'), ctx = canvas.getContext('2d');
+    const extraSpins = 10 + Math.random() * 5, totalRot = Math.PI * 2 * extraSpins, duration = 6500, start = performance.now(), startAngle = currentAngle;
+
+    function frame(now) {
+        const t = Math.min((now - start) / duration, 1);
+        currentAngle = startAngle + totalRot * (1 - Math.pow(1 - t, 4));
+        drawWheel(ctx, currentAngle);
+        if (t < 1) requestAnimationFrame(frame);
+        else {
+            spinning = false;
+            document.getElementById('spinBtn').disabled = false;
+            const arc = 2 * Math.PI / wheelCuisines.length;
+            const adjusted = (((-Math.PI / 2) - currentAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            const idx = Math.floor(adjusted / arc) % wheelCuisines.length;
+            showSpinResult(wheelCuisines[idx], idx);
+        }
+    }
+    document.getElementById('wheelResult').innerHTML = '<div class="cuisine-sub">spinning...</div>';
+    requestAnimationFrame(frame);
+}
+
+function showSpinResult(c, idx) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+    const fullStamp = `${dateStr}, ${timeStr}`;
+
+    spinHistory.unshift({ label: c.label, color: c.color, time: fullStamp });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory.slice(0, 20)));
+    renderHistory();
+    document.getElementById('wheelResult').innerHTML = `<div class="cuisine-name" style="color:${c.color}">${c.label}</div><div class="cuisine-sub">fate has spoken</div>`;
+    document.getElementById('resultActions').innerHTML = `<button class="btn btn-danger" style="font-size:10px;padding:5px 10px;" onclick="promptRemove(${idx})">Remove from wheel</button>`;
+}
+
+// --- 8. Management & Modals ---
+function renderHistory() {
+    const el = document.getElementById('historyList');
+    if(el) el.innerHTML = spinHistory.map(h => `
+        <div class="history-item"><span style="color:${h.color}">${h.label}</span><span class="history-time">${h.time}</span></div>
+    `).join('') || '<span class="history-empty">no spins</span>';
+}
+
+function clearHistory() { spinHistory = []; localStorage.removeItem(HISTORY_KEY); renderHistory(); }
+
+function toggleEdit() {
+    editMode = !editMode;
+    document.getElementById('cuisineViewList').style.display = editMode ? 'none' : 'block';
+    document.getElementById('cuisineEditPanel').style.display = editMode ? 'block' : 'none';
+}
+
+function renderCuisineView() {
+    const el = document.getElementById('cuisineViewList');
+    if(el) el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px;">` +
+        wheelCuisines.map(c => `<span style="border:1px solid ${c.color};color:${c.color};font-size:10px;padding:2px 5px;">${c.label}</span>`).join('') + `</div>`;
+}
+
+function renderCuisineEditList() {
+    const el = document.getElementById('cuisineEditList');
+    if(el) el.innerHTML = wheelCuisines.map((c, i) => `
+        <div class="cuisine-edit-item"><div class="cuisine-color-dot" style="background:${c.color}"></div><span>${c.label}</span><button onclick="removeCuisine(${i})">✕</button></div>
+    `).join('');
+}
+
+function addCuisine() {
+    const i = document.getElementById('newCuisineInput'), l = i.value.trim();
+    if (!l) return;
+    wheelCuisines.push({ label: l, color: PALETTE[wheelCuisines.length % PALETTE.length] });
+    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
+    i.value = ''; renderWheel(); renderCuisineView(); renderCuisineEditList();
+}
+
+function removeCuisine(i) {
+    wheelCuisines.splice(i, 1);
+    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
+    renderWheel(); renderCuisineView(); renderCuisineEditList();
+}
+
+function promptRemove(i) {
+    pendingRemove = i;
+    document.getElementById('removeModalText').textContent = `Remove ${wheelCuisines[i].label}?`;
+    document.getElementById('removeModal').classList.add('show');
+    // Point confirm button to wheel logic
+    const confirmBtn = document.querySelector('#removeModal .btn-danger');
+    confirmBtn.onclick = confirmRemove;
+}
+
+function confirmRemove() {
+    wheelCuisines.splice(pendingRemove, 1);
+    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(wheelCuisines));
+    closeModal(); renderWheel();
+    document.getElementById('wheelResult').innerHTML = '<div class="cuisine-sub">removed</div>';
+}
+
+function closeModal() { document.getElementById('removeModal').classList.remove('show'); }
+
+function showToast(m) {
+    const t = document.getElementById('toast');
+    if(!t) return;
+    t.textContent = m; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// --- 9. Global Init ---
+window.onload = () => {
+    syncWithFirebase();
+    renderWheel();
+}; // This closing brace and semicolon were missing, which caused the error
+
+// --- Delete Review ---
+async function promptDeleteReview(id) {
+    if (confirm("Permanently delete this review from the cloud?")) {
+        try {
+            await db.collection('reviews').doc(id).delete();
+            showToast('Review deleted');
+        } catch (e) {
+            showToast('Delete failed');
+        }
+    }
+}
+
+// --- Edit Functions ---
+function openEditModal(id) {
     currentEditId = id;
-    const r = reviews.find(x => x.id === id);
+    const r = reviews.find(review => review.id === id);
     if (!r) return;
 
-    document.getElementById('edit-name').value = r.name || '';
-    document.getElementById('edit-region').value = r.region || 'Central';
-    document.getElementById('edit-loc').value = r.loc || '';
-    document.getElementById('edit-maps-link').value = r.mapsLink || '';
-    document.getElementById('edit-cuisine').value = r.cuisine || '';
-    document.getElementById('edit-review').value = r.text || '';
+    document.getElementById('edit-name').value = r.name || "";
+    document.getElementById('edit-loc').value = r.loc || "";
+    document.getElementById('edit-cuisine').value = r.cuisine || "";
+    document.getElementById('edit-review').value = r.text || "";
+
+    const rating = r.rating || 7.0;
+    const editSlider = document.getElementById('edit-rating-slider');
+    const editDisplay = document.getElementById('edit-rating-display');
     
-    const eSlider = document.getElementById('edit-rating-slider');
-    const eDisplay = document.getElementById('edit-rating-display');
-    eSlider.value = r.rating || 7.0;
-    eDisplay.textContent = parseFloat(eSlider.value).toFixed(1);
+    if (editSlider && editDisplay) {
+        editSlider.value = rating;
+        
+        // This makes the slider color and number change while dragging
+        editSlider.oninput = () => {
+            const v = parseFloat(editSlider.value).toFixed(1);
+            const newColor = getDynamicColor(v);
+            editDisplay.textContent = v;
+            editDisplay.style.color = newColor;
+            editSlider.style.accentColor = newColor;
+        };
 
-    window.tempEditImages = Array.isArray(r.img) ? [...r.img] : (r.img ? [r.img] : []);
+        // Run it once immediately so the modal opens with the correct color
+        editSlider.oninput();
+    }
+
+    const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
+    window.tempEditImages = [...images]; 
     renderEditImages();
-
+    
     document.getElementById('editModal').classList.add('show');
 }
 
 function renderEditImages() {
     const container = document.getElementById('edit-image-preview-container');
-    container.innerHTML = window.tempEditImages.map((src, i) => `
-        <div class="edit-img-wrapper">
-            <img src="${src}">
-            <button class="remove-img-btn" onclick="removeTempImage(${i})">×</button>
-        </div>
-    `).join('');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    window.tempEditImages.forEach((imgSrc, i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'edit-img-wrapper';
+        wrapper.innerHTML = `
+            <img src="${imgSrc}">
+            <button type="button" class="remove-img-btn" onclick="removeImageFromEdit(${i})">✕</button>
+        `;
+        container.appendChild(wrapper);
+    });
 }
 
-function removeTempImage(index) {
+function removeImageFromEdit(index) {
     window.tempEditImages.splice(index, 1);
     renderEditImages();
 }
 
 function closeEditModal() {
     document.getElementById('editModal').classList.remove('show');
-    currentEditId = null;
 }
 
 async function saveEdit() {
     if (!currentEditId) return;
-    const newFiles = document.getElementById('edit-img-input').files;
+    showToast('Saving...');
+    
+    const fileInput = document.getElementById('edit-img-input');
+    const newFiles = fileInput ? fileInput.files : [];
     let uploadedImages = [];
 
     try {
@@ -244,13 +438,11 @@ async function saveEdit() {
 
         const update = {
             name: document.getElementById('edit-name').value.trim(),
-            region: document.getElementById('edit-region').value,
             loc: document.getElementById('edit-loc').value.trim(),
-            mapsLink: document.getElementById('edit-maps-link').value.trim(),
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
-            img: [...window.tempEditImages, ...uploadedImages]
+            img: [...(window.tempEditImages || []), ...uploadedImages]
         };
 
         await db.collection('reviews').doc(currentEditId).update(update);
@@ -261,116 +453,7 @@ async function saveEdit() {
     }
 }
 
-// --- 8. Spin Wheel Logic ---
-function getCuisines() {
-    const local = JSON.parse(localStorage.getItem(WHEEL_CUISINES_KEY));
-    return local || ["Japanese", "Mala", "Western", "Thai", "Korean", "Pasta", "Burgers", "Prata"];
-}
-
-function initWheel() {
-    const cuisines = getCuisines();
-    const canvas = document.getElementById('wheelCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const size = canvas.width;
-    const center = size / 2;
-    const arc = (Math.PI * 2) / cuisines.length;
-
-    ctx.clearRect(0, 0, size, size);
-    cuisines.forEach((c, i) => {
-        const angle = currentAngle + i * arc;
-        ctx.fillStyle = PALETTE[i % PALETTE.length];
-        ctx.beginPath();
-        ctx.moveTo(center, center);
-        ctx.arc(center, center, center - 10, angle, angle + arc);
-        ctx.lineTo(center, center);
-        ctx.fill();
-        ctx.strokeStyle = '#252525';
-        ctx.stroke();
-
-        ctx.save();
-        ctx.translate(center, center);
-        ctx.rotate(angle + arc / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 12px Monaco";
-        ctx.fillText(c.toUpperCase(), center - 30, 5);
-        ctx.restore();
-    });
-    
-    updateCuisineLists();
-    renderHistory();
-}
-
-function spinWheel() {
-    if (spinning) return;
-    const cuisines = getCuisines();
-    spinning = true;
-    const duration = 3000;
-    const start = performance.now();
-    const extraSpins = 5 + Math.random() * 5;
-    const totalRotation = extraSpins * Math.PI * 2;
-    const initialAngle = currentAngle;
-
-    function animate(time) {
-        const elapsed = time - start;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        
-        currentAngle = initialAngle + totalRotation * easeOut;
-        initWheel();
-
-        if (progress < 1) {
-            requestAnimationFrame(animate);
-        } else {
-            spinning = false;
-            const arc = (Math.PI * 2) / cuisines.length;
-            const normalized = ((currentAngle % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-            const idx = cuisines.length - 1 - Math.floor(normalized / arc) % cuisines.length;
-            const result = cuisines[idx];
-            
-            document.getElementById('wheelResult').innerHTML = `
-                <div class="cuisine-name">${result}</div>
-                <div class="cuisine-sub">fate has decided.</div>
-            `;
-            
-            spinHistory.unshift({ name: result, date: new Date().toLocaleTimeString() });
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(spinHistory));
-            renderHistory();
-        }
-    }
-    requestAnimationFrame(animate);
-}
-
-// --- 9. Tier List Logic ---
-function renderTierList() {
-    const board = { S:[], A:[], B:[], C:[], D:[], F:[] };
-    reviews.forEach(r => {
-        if (r.rating >= 9.0) board.S.push(r);
-        else if (r.rating >= 8.0) board.A.push(r);
-        else if (r.rating >= 7.0) board.B.push(r);
-        else if (r.rating >= 6.0) board.C.push(r);
-        else if (r.rating >= 4.5) board.D.push(r);
-        else board.F.push(r);
-    });
-
-    Object.keys(board).forEach(tier => {
-        const el = document.getElementById('tier-' + tier);
-        if (el) {
-            el.innerHTML = board[tier].map(r => `<div class="tier-chip">${r.name}</div>`).join('');
-        }
-    });
-}
-
-// --- 10. Utils ---
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    if (!t) return;
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
-}
-
+// --- Image Viewer Logic ---
 function openImageViewer(src) {
     const modal = document.getElementById('imageViewerModal');
     const fullImg = document.getElementById('fullSizeImage');
@@ -381,64 +464,66 @@ function openImageViewer(src) {
 }
 
 function closeImageViewer() {
-    document.getElementById('imageViewerModal').classList.remove('show');
+    const modal = document.getElementById('imageViewerModal');
+    if (modal) modal.classList.remove('show');
 }
 
-function updateCuisineLists() {
-    const cuisines = getCuisines();
-    const view = document.getElementById('cuisineViewList');
-    const edit = document.getElementById('cuisineEditList');
-    if (view) view.innerHTML = cuisines.map(c => `<div class="tier-chip" style="margin:2px; display:inline-block;">${c}</div>`).join('');
-    if (edit) edit.innerHTML = cuisines.map((c, i) => `
-        <div class="cuisine-edit-item">
-            <span>${c}</span>
-            <button onclick="removeCuisine(${i})" style="background:none; border:none; color:#c84a4a; cursor:pointer;">×</button>
-        </div>
-    `).join('');
+// gmaps
+let map, autocomplete, marker;
+let activeLocationInputId = ''; // Tracks which field to fill (add or edit)
+
+function openMapModal(inputId) {
+    activeLocationInputId = inputId;
+    document.getElementById('mapModal').classList.add('show');
+    initMap();
 }
 
-function toggleEdit() {
-    editMode = !editMode;
-    document.getElementById('cuisineViewList').style.display = editMode ? 'none' : 'block';
-    document.getElementById('cuisineEditPanel').style.display = editMode ? 'block' : 'none';
+function closeMapModal() {
+    document.getElementById('mapModal').classList.remove('show');
 }
 
-function addCuisine() {
-    const inp = document.getElementById('newCuisineInput');
-    const val = inp.value.trim();
-    if (!val) return;
-    const cuisines = getCuisines();
-    cuisines.push(val);
-    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(cuisines));
-    inp.value = '';
-    initWheel();
+function initMap() {
+    const defaultPos = { lat: 1.3521, lng: 103.8198 }; // Default to Singapore
+    
+    map = new google.maps.Map(document.getElementById("googleMap"), {
+        center: defaultPos,
+        zoom: 13,
+        styles: [ { "stylers": [ { "invert_lightness": true }, { "hue": "#ffbb00" }, { "saturation": -100 } ] } ] // Dark Mode Map
+    });
+
+    marker = new google.maps.Marker({
+        map: map,
+        draggable: true,
+        position: defaultPos
+    });
+
+    const input = document.getElementById("map-search");
+    autocomplete = new google.maps.places.Autocomplete(input);
+    autocomplete.bindTo("bounds", map);
+
+    autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) return;
+
+        if (place.geometry.viewport) map.fitBounds(place.geometry.viewport);
+        else {
+            map.setCenter(place.geometry.location);
+            map.setZoom(17);
+        }
+        marker.setPosition(place.geometry.location);
+    });
 }
 
-function removeCuisine(idx) {
-    const cuisines = getCuisines();
-    if (cuisines.length <= 2) return showToast("Need at least 2 options");
-    cuisines.splice(idx, 1);
-    localStorage.setItem(WHEEL_CUISINES_KEY, JSON.stringify(cuisines));
-    initWheel();
-}
-
-function renderHistory() {
-    const el = document.getElementById('historyList');
-    if (!el) return;
-    if (spinHistory.length === 0) {
-        el.innerHTML = '<span class="history-empty">no spins yet</span>';
-        return;
+function confirmMapLocation() {
+    const place = autocomplete.getPlace();
+    const targetInput = document.getElementById(activeLocationInputId);
+    
+    if (place && place.formatted_address) {
+        targetInput.value = place.name + ", " + place.formatted_address;
+    } else if (document.getElementById('map-search').value) {
+        targetInput.value = document.getElementById('map-search').value;
     }
-    el.innerHTML = spinHistory.map(h => `
-        <div class="history-item">
-            <strong>${h.name}</strong>
-            <span style="font-size:9px; color:var(--muted)">${h.date}</span>
-        </div>
-    `).join('');
-}
-
-function clearHistory() {
-    spinHistory = [];
-    localStorage.removeItem(HISTORY_KEY);
-    renderHistory();
+    
+    closeMapModal();
+    document.getElementById('map-search').value = ''; // Clear search for next time
 }
