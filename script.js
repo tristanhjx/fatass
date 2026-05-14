@@ -362,52 +362,62 @@ async function promptDeleteReview(id) {
 
 // --- Edit Functions ---
 // Initialize the edit slider listener (add this near your other slider logic)
+// --- Edit Functions ---
+
+// 1. Ensure the slider listeners are correctly linked
 const editSlider = document.getElementById('edit-rating-slider');
 const editDisplay = document.getElementById('edit-rating-display');
 
 if (editSlider) {
     editSlider.addEventListener('input', () => {
         const v = parseFloat(editSlider.value).toFixed(1);
-        const newColor = getDynamicColor(v); // Reuses your color logic
+        const newColor = getDynamicColor(v);
         editDisplay.textContent = v;
         editDisplay.style.color = newColor;
         editSlider.style.accentColor = newColor;
     });
 }
 
+// 2. The corrected openEditModal function
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(review => review.id === id);
     
-    // ... (Keep your previous code for name, loc, cuisine, text) ...
+    if (!r) return; // Guard clause
 
-    // Initialize the slider with the existing rating
+    // Fill Text and Rating Fields
+    document.getElementById('edit-name').value = r.name || "";
+    document.getElementById('edit-loc').value = r.loc || "";
+    document.getElementById('edit-cuisine').value = r.cuisine || "";
+    document.getElementById('edit-review').value = r.text || "";
+
     const rating = r.rating || 7.0;
     editSlider.value = rating;
     editDisplay.textContent = rating.toFixed(1);
     
-    // Apply colors immediately
     const initialColor = getDynamicColor(rating);
     editDisplay.style.color = initialColor;
     editSlider.style.accentColor = initialColor;
 
-    // ... (Keep your previous code for image management) ...
+    // Handle Image Management
+    const container = document.getElementById('edit-image-preview-container');
+    container.innerHTML = '';
+    
+    // Normalize images (handle old single strings vs new arrays)
+    const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
+    window.tempEditImages = [...images]; // Store globally for this edit session
+
+    renderEditImages();
     
     document.getElementById('editModal').classList.add('show');
 }
 
-// Function to remove a specific image from the preview list
-function removeImageFromEdit(index) {
-    window.tempEditImages.splice(index, 1);
-    // Refresh the preview
+// 3. Helper to render images specifically inside the edit modal
+function renderEditImages() {
     const container = document.getElementById('edit-image-preview-container');
-    const wrappers = container.querySelectorAll('.edit-img-wrapper');
-    if (wrappers[index]) wrappers[index].remove();
-    
-    // Re-render to ensure indices stay synced
-    const images = [...window.tempEditImages];
     container.innerHTML = '';
-    images.forEach((imgSrc, i) => {
+    
+    window.tempEditImages.forEach((imgSrc, i) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'edit-img-wrapper';
         wrapper.innerHTML = `
@@ -416,6 +426,12 @@ function removeImageFromEdit(index) {
         `;
         container.appendChild(wrapper);
     });
+}
+
+// 4. Remove image handler
+function removeImageFromEdit(index) {
+    window.tempEditImages.splice(index, 1);
+    renderEditImages(); // Re-render to update indices
 }
 
 function closeEditModal() {
