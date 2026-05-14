@@ -14,7 +14,7 @@
 /* --- 2. Update the .rating-val style --- */
 .rating-val {
     font-weight: bold;
-    font-size: 214px; /* Increased from 14px */
+    font-size: 14px; /* Increased from 14px */
     margin-bottom: .5rem;
     display: flex;
     align-items: baseline;
