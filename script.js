@@ -424,6 +424,13 @@ function openEditModal(id) {
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
 
+    // Populate author dropdown from existing reviews
+    const authors = [...new Set(reviews.map(rev => rev.author).filter(Boolean))].sort();
+    const editAuthor = document.getElementById('edit-author');
+    editAuthor.innerHTML = '<option value="" disabled>Select name...</option>' +
+        authors.map(a => `<option value="${a}">${a}</option>`).join('');
+    editAuthor.value = r.author || "";
+
     // Parse the stored location string back into parts for the modal
     const locString = r.loc || "";
     let town = "", region = "Central", link = "";
@@ -519,6 +526,7 @@ async function saveEdit() {
             name: document.getElementById('edit-name').value.trim(),
             loc: loc,
             cuisine: document.getElementById('edit-cuisine').value.trim(),
+            author: document.getElementById('edit-author').value,
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
             dishes: getDishesFromContainer('edit-dish-list'),
@@ -547,4 +555,3 @@ function closeImageViewer() {
     const modal = document.getElementById('imageViewerModal');
     if (modal) modal.classList.remove('show');
 }
-
