@@ -278,6 +278,64 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 .btn-teal{background:var(--teal);}
 .btn-danger{background:none;border:1px solid #c84a4a;color:#c84a4a;}
 .btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);}
+/* Dish Ratings — form rows */
+.dish-add-btn { margin-top: 8px; font-size: 11px; padding: 5px 14px; letter-spacing: 1px; }
+.dish-input-row {
+    display: grid;
+    grid-template-columns: 1fr 90px auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.dish-input-row input[type="text"],
+.dish-input-row input[type="number"] {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 5px 8px;
+    outline: none;
+    width: 100%;
+}
+.dish-input-row input:focus { border-color: var(--teal); }
+.dish-remove-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 7px;
+    line-height: 1;
+    transition: all .15s;
+}
+.dish-remove-btn:hover { border-color: #c84a4a; color: #c84a4a; }
+
+/* Dish Ratings — display in review card */
+.dish-ratings {
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.dish-rating-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 11px;
+}
+.dish-rating-name { color: var(--text); letter-spacing: 0.5px; }
+.dish-rating-score { font-weight: bold; font-size: 13px; }
+.dish-rating-dots {
+    flex: 1;
+    border-bottom: 1px dotted var(--border);
+    margin: 0 8px;
+    position: relative;
+    top: -2px;
+}
+
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--teal);color:#fff;font-family:var(--font);font-size:12px;letter-spacing:1px;padding:.75rem 1.5rem;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:999;}
 .toast.show{opacity:1;transform:translateY(0);}
 
