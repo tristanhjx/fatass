@@ -112,6 +112,7 @@ async function submitReview() {
     const text = document.getElementById('inp-review').value.trim();
     const rating = parseFloat(slider.value);
     const imgFile = document.getElementById('inp-img').files[0];
+    const tags = (document.getElementById('inp-tags').value || '').split(',').map(t=>t.trim()).filter(Boolean);
 
     // Validation update: Ensure name, region, town, cuisine, and author are present
     if (!name || !region || !town || !cuisine || !author) return showToast('Fill in all required fields!');
@@ -126,7 +127,7 @@ async function submitReview() {
     const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
 
     const newReview = { 
-        name, loc, cuisine, author, rating, text, 
+        name, loc, cuisine, author, rating, text, tags,
         dishes: getDishesFromContainer('inp-dish-list'),
         img: finalImg ? [finalImg] : [], 
         date: new Date().toISOString() 
@@ -145,6 +146,7 @@ async function submitReview() {
         document.getElementById('inp-review').value = '';
         document.getElementById('inp-img').value = '';
         document.getElementById('inp-dish-list').innerHTML = '';
+        clearTagsInput('inp-tags-chips', 'inp-tags');
         
         showPage('reviews');
     } catch (e) {
@@ -153,14 +155,15 @@ async function submitReview() {
     }
 }
 
-function renderReviews() {
+function renderReviews(filtered) {
     const grid = document.getElementById('restGrid');
     if (!grid) return;
-    if (reviews.length === 0) {
+    const list = filtered || reviews;
+    if (list.length === 0) {
         grid.innerHTML = '<p class="history-empty">No reviews yet.</p>';
         return;
     }
-    grid.innerHTML = reviews.map(r => {
+    grid.innerHTML = list.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
         
         // Handle Map Link
@@ -185,6 +188,7 @@ function renderReviews() {
             </div>
             
             <div class="snippet">${r.text}</div>
+            ${Array.isArray(r.tags) && r.tags.length ? `<div class="card-tags">${r.tags.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
             
             ${Array.isArray(r.dishes) && r.dishes.length ? `
             <div class="dish-ratings">
@@ -509,6 +513,7 @@ function openEditModal(id) {
     window.tempEditImages = [...images]; 
     renderEditImages();
     loadDishesIntoContainer('edit-dish-list', r.dishes || []);
+    loadTagsIntoInput(r.tags || [], 'edit-tags-chips', 'edit-tags');
     
     document.getElementById('editModal').classList.add('show');
 }
@@ -569,7 +574,8 @@ async function saveEdit() {
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
             dishes: getDishesFromContainer('edit-dish-list'),
-            img: [...(window.tempEditImages || []), ...uploadedImages]
+            img: [...(window.tempEditImages || []), ...uploadedImages],
+            tags: (document.getElementById('edit-tags').value || '').split(',').map(t=>t.trim()).filter(Boolean)
         };
 
         await db.collection('reviews').doc(currentEditId).update(update);
@@ -594,3 +600,91 @@ function closeImageViewer() {
     const modal = document.getElementById('imageViewerModal');
     if (modal) modal.classList.remove('show');
 }
+
+// --- Tags Input Logic ---
+function initTagsInput(chipsId, hiddenId, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === ',' || e.key === 'Enter') {
+            e.preventDefault();
+            const val = input.value.trim().replace(/,+$/, '');
+            if (val) addTag(val, chipsId, hiddenId);
+            input.value = '';
+        } else if (e.key === 'Backspace' && input.value === '') {
+            const chips = document.getElementById(chipsId);
+            const last = chips ? chips.lastElementChild : null;
+            if (last) last.remove();
+            updateHiddenTags(chipsId, hiddenId);
+        }
+    });
+
+    // Also handle paste with commas
+    input.addEventListener('input', function() {
+        if (input.value.includes(',')) {
+            const parts = input.value.split(',');
+            parts.slice(0, -1).forEach(p => { if (p.trim()) addTag(p.trim(), chipsId, hiddenId); });
+            input.value = parts[parts.length - 1];
+        }
+    });
+}
+
+function addTag(label, chipsId, hiddenId) {
+    const chips = document.getElementById(chipsId);
+    if (!chips) return;
+    // Prevent duplicates
+    const existing = Array.from(chips.querySelectorAll('.tag-chip span')).map(s => s.textContent.toLowerCase());
+    if (existing.includes(label.toLowerCase())) return;
+
+    const chip = document.createElement('div');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `<span>${label}</span><button type="button" onclick="this.parentElement.remove(); updateHiddenTags('${chipsId}', '${hiddenId}')">✕</button>`;
+    chips.appendChild(chip);
+    updateHiddenTags(chipsId, hiddenId);
+}
+
+function updateHiddenTags(chipsId, hiddenId) {
+    const chips = document.getElementById(chipsId);
+    const hidden = document.getElementById(hiddenId);
+    if (!chips || !hidden) return;
+    hidden.value = Array.from(chips.querySelectorAll('.tag-chip span')).map(s => s.textContent).join(',');
+}
+
+function clearTagsInput(chipsId, hiddenId) {
+    const chips = document.getElementById(chipsId);
+    if (chips) chips.innerHTML = '';
+    const hidden = document.getElementById(hiddenId);
+    if (hidden) hidden.value = '';
+}
+
+function loadTagsIntoInput(tagsArray, chipsId, hiddenId) {
+    clearTagsInput(chipsId, hiddenId);
+    (tagsArray || []).forEach(t => addTag(t, chipsId, hiddenId));
+}
+
+// --- Search Logic ---
+function filterAndRender() {
+    const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+    const mode = document.getElementById('search-filter')?.value || 'name';
+    if (!query) { renderReviews(); return; }
+
+    const filtered = reviews.filter(r => {
+        if (mode === 'name') return r.name.toLowerCase().includes(query);
+        if (mode === 'tags') return Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(query));
+        return false;
+    });
+    renderReviews(filtered);
+}
+
+// Wire up search inputs
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search-input');
+    const searchFilter = document.getElementById('search-filter');
+    if (searchInput) searchInput.addEventListener('input', filterAndRender);
+    if (searchFilter) searchFilter.addEventListener('change', filterAndRender);
+
+    // Init tags inputs
+    initTagsInput('inp-tags-chips', 'inp-tags', 'inp-tags-input');
+    initTagsInput('edit-tags-chips', 'edit-tags', 'edit-tags-input');
+});
