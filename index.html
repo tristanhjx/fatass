@@ -133,6 +133,11 @@
             </div>
             <div class="form-row"><label>Review</label><textarea id="inp-review" placeholder="Worth the queue?"></textarea></div>
             <div class="form-row"><label>Photo</label><input type="file" id="inp-img" accept="image/*"></div>
+            <div class="form-row">
+                <label>Dish Ratings</label>
+                <div id="inp-dish-list"></div>
+                <button type="button" class="btn btn-ghost dish-add-btn" onclick="addDishRow('inp-dish-list')">+ add dish</button>
+            </div>
             <button class="btn" onclick="submitReview()">Post Review</button>
         </div>
     </div>
@@ -185,7 +190,12 @@
                 <div id="edit-image-preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
                 <input type="file" id="edit-img-input" accept="image/*" multiple>
             </div>
-    
+            <div class="form-row">
+                <label>Dish Ratings</label>
+                <div id="edit-dish-list"></div>
+                <button type="button" class="btn btn-ghost dish-add-btn" onclick="addDishRow('edit-dish-list')">+ add dish</button>
+            </div>
+
             <div class="modal-btns">
                 <button class="btn" onclick="saveEdit()">Save Changes</button>
                 <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
