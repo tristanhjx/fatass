@@ -126,6 +126,7 @@ async function submitReview() {
 
     const newReview = { 
         name, loc, cuisine, author, rating, text, 
+        dishes: getDishesFromContainer('inp-dish-list'),
         img: finalImg ? [finalImg] : [], 
         date: new Date().toISOString() 
     };
@@ -142,6 +143,7 @@ async function submitReview() {
         document.getElementById('inp-cuisine').value = '';
         document.getElementById('inp-review').value = '';
         document.getElementById('inp-img').value = '';
+        document.getElementById('inp-dish-list').innerHTML = '';
         
         showPage('reviews');
     } catch (e) {
@@ -182,6 +184,16 @@ function renderReviews() {
             </div>
             
             <div class="snippet">${r.text}</div>
+            
+            ${Array.isArray(r.dishes) && r.dishes.length ? `
+            <div class="dish-ratings">
+                ${r.dishes.map(d => `
+                <div class="dish-rating-row">
+                    <span class="dish-rating-name">${d.name}</span>
+                    <span class="dish-rating-dots"></span>
+                    <span class="dish-rating-score" style="color:${getTierColor(d.rating)}">${parseFloat(d.rating).toFixed(1)}</span>
+                </div>`).join('')}
+            </div>` : ''}
             
             <div class="image-gallery">
                 ${images.map(imgSrc => `
@@ -344,6 +356,39 @@ function confirmRemove() {
 
 function closeModal() { document.getElementById('removeModal').classList.remove('show'); }
 
+// --- Dish Ratings Helpers ---
+function addDishRow(containerId, name = '', rating = '') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'dish-input-row';
+    row.innerHTML = `
+        <input type="text" placeholder="Dish name" value="${name}" />
+        <input type="number" placeholder="Score" min="0" max="10" step="0.1" value="${rating}" />
+        <button type="button" class="dish-remove-btn" onclick="this.parentElement.remove()">✕</button>
+    `;
+    container.appendChild(row);
+}
+
+function getDishesFromContainer(containerId) {
+    const rows = document.querySelectorAll(`#${containerId} .dish-input-row`);
+    const dishes = [];
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        const name = inputs[0].value.trim();
+        const rating = parseFloat(inputs[1].value);
+        if (name && !isNaN(rating)) dishes.push({ name, rating });
+    });
+    return dishes;
+}
+
+function loadDishesIntoContainer(containerId, dishes) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    (dishes || []).forEach(d => addDishRow(containerId, d.name, d.rating));
+}
+
 function showToast(m) {
     const t = document.getElementById('toast');
     if(!t) return;
@@ -417,6 +462,7 @@ function openEditModal(id) {
     const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
     window.tempEditImages = [...images]; 
     renderEditImages();
+    loadDishesIntoContainer('edit-dish-list', r.dishes || []);
     
     document.getElementById('editModal').classList.add('show');
 }
@@ -475,6 +521,7 @@ async function saveEdit() {
             cuisine: document.getElementById('edit-cuisine').value.trim(),
             text: document.getElementById('edit-review').value.trim(),
             rating: parseFloat(document.getElementById('edit-rating-slider').value),
+            dishes: getDishesFromContainer('edit-dish-list'),
             img: [...(window.tempEditImages || []), ...uploadedImages]
         };
 
@@ -500,3 +547,4 @@ function closeImageViewer() {
     const modal = document.getElementById('imageViewerModal');
     if (modal) modal.classList.remove('show');
 }
+
