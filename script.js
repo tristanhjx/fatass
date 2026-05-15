@@ -97,6 +97,7 @@ function syncWithFirebase() {
         reviews.forEach(r => autoMapToTier(r));
         renderReviews();
         renderTierBoard();
+        populateAuthorDropdowns();
     });
 }
 
@@ -356,7 +357,48 @@ function confirmRemove() {
 
 function closeModal() { document.getElementById('removeModal').classList.remove('show'); }
 
-// --- Dish Ratings Helpers ---
+// --- Author Management ---
+const AUTHORS_KEY = 'fatass_authors_v1';
+
+function getSavedAuthors() {
+    try { return JSON.parse(localStorage.getItem(AUTHORS_KEY)) || []; } catch(e) { return []; }
+}
+
+function saveAuthors(list) {
+    localStorage.setItem(AUTHORS_KEY, JSON.stringify(list));
+}
+
+function populateAuthorDropdowns(selectId = null) {
+    // Merge Firebase authors with locally saved ones
+    const firebaseAuthors = reviews.map(r => r.author).filter(Boolean);
+    const saved = getSavedAuthors();
+    const all = [...new Set([...saved, ...firebaseAuthors])].sort();
+
+    const base = `<option value="" disabled>Select name...</option>`;
+    const targets = selectId ? [selectId] : ['inp-author', 'edit-author'];
+    targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = el.value;
+        el.innerHTML = base + all.map(a => `<option value="${a}">${a}</option>`).join('');
+        if (current) el.value = current;
+    });
+}
+
+function promptAddAuthor(selectId) {
+    const name = prompt('Enter new name:');
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    const saved = getSavedAuthors();
+    if (!saved.includes(trimmed)) {
+        saved.push(trimmed);
+        saveAuthors(saved);
+    }
+    populateAuthorDropdowns();
+    // Select the new name in the triggering dropdown
+    const el = document.getElementById(selectId);
+    if (el) el.value = trimmed;
+}
 function addDishRow(containerId, name = '', rating = '') {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -424,12 +466,9 @@ function openEditModal(id) {
     document.getElementById('edit-cuisine').value = r.cuisine || "";
     document.getElementById('edit-review').value = r.text || "";
 
-    // Populate author dropdown from existing reviews
-    const authors = [...new Set(reviews.map(rev => rev.author).filter(Boolean))].sort();
-    const editAuthor = document.getElementById('edit-author');
-    editAuthor.innerHTML = '<option value="" disabled>Select name...</option>' +
-        authors.map(a => `<option value="${a}">${a}</option>`).join('');
-    editAuthor.value = r.author || "";
+    // Populate author dropdown from existing reviews + saved authors
+    populateAuthorDropdowns('edit-author');
+    document.getElementById('edit-author').value = r.author || "";
 
     // Parse the stored location string back into parts for the modal
     const locString = r.loc || "";
