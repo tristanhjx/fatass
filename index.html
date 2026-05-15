@@ -120,8 +120,10 @@
                 </div>
                 <div class="form-row">
                     <label>Your name</label>
-                    <input list="list-authors" id="inp-author" placeholder="Wei Jie">
-                    <datalist id="list-authors"></datalist>
+                    <div class="author-row">
+                        <select id="inp-author"><option value="" disabled selected>Select name...</option></select>
+                        <button type="button" class="author-add-btn" onclick="promptAddAuthor('inp-author')" title="Add new name">+</button>
+                    </div>
                 </div>
             </div>
             <div class="form-row">
@@ -177,7 +179,10 @@
             <div class="form-row"><label>Cuisine</label><input type="text" id="edit-cuisine"></div>
             <div class="form-row">
                 <label>Author</label>
-                <select id="edit-author"><option value="" disabled selected>Select name...</option></select>
+                <div class="author-row">
+                    <select id="edit-author"><option value="" disabled selected>Select name...</option></select>
+                    <button type="button" class="author-add-btn" onclick="promptAddAuthor('edit-author')" title="Add new name">+</button>
+                </div>
             </div>
             <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
          
