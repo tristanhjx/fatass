@@ -352,3 +352,103 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 .pac-item { border-top: 1px solid var(--border); color: var(--text); }
 .pac-item:hover { background-color: var(--bg3); }
 .pac-item-query { color: var(--orange); }
+
+/* Search Bar */
+.search-bar-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    align-items: center;
+}
+.search-filter-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 11px;
+    padding: 8px 10px;
+    outline: none;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.search-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--teal); }
+
+/* Tags Input */
+.tags-input-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 6px 8px;
+    cursor: text;
+    min-height: 38px;
+    align-items: center;
+    transition: border-color 0.2s;
+}
+.tags-input-wrapper:focus-within { border-color: var(--teal); }
+.tags-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg2);
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    text-transform: uppercase;
+}
+.tag-chip button {
+    background: none;
+    border: none;
+    color: var(--teal);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.7;
+}
+.tag-chip button:hover { opacity: 1; }
+.tags-input-wrapper input {
+    flex: 1;
+    min-width: 140px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    outline: none;
+    padding: 2px 0;
+}
+
+/* Tags display in review cards */
+.card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+}
+.card-tag {
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    text-transform: uppercase;
+}
