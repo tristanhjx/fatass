@@ -33,6 +33,13 @@
 
     <div id="page-reviews" class="page">
         <div class="page-hero"><h2>Reviews</h2><p>// what the crew has been eating //</p></div>
+        <div class="search-bar-row">
+            <select id="search-filter" class="search-filter-select">
+                <option value="name">Restaurant Name</option>
+                <option value="tags">Tags</option>
+            </select>
+            <input type="text" id="search-input" class="search-input" placeholder="Search reviews...">
+        </div>
         <div class="section-title">// all reviews</div>
         <div class="rest-grid" id="restGrid"></div>
     </div>
@@ -104,6 +111,7 @@
                             <option value="North-East">North-East</option>
                             <option value="East">East</option>
                             <option value="West">West</option>
+                            <option value="South">South</option>
                         </select>
                         <input type="text" id="inp-town" placeholder="Town/Area (e.g. Toa Payoh)">
                     </div>
@@ -134,6 +142,14 @@
                 </div>
             </div>
             <div class="form-row"><label>Review</label><textarea id="inp-review" placeholder="Worth the queue?"></textarea></div>
+            <div class="form-row">
+                <label>Tags</label>
+                <div class="tags-input-wrapper" id="inp-tags-wrapper">
+                    <div class="tags-chips" id="inp-tags-chips"></div>
+                    <input type="text" id="inp-tags-input" placeholder="Type a tag, press comma or Enter..." autocomplete="off">
+                </div>
+                <input type="hidden" id="inp-tags">
+            </div>
             <div class="form-row"><label>Photo</label><input type="file" id="inp-img" accept="image/*"></div>
             <div class="form-row">
                 <label>Dish Ratings</label>
@@ -169,6 +185,7 @@
                         <option value="North-East">North-East</option>
                         <option value="East">East</option>
                         <option value="West">West</option>
+                        <option value="South">South</option>
                     </select>
                     <input type="text" id="edit-town" placeholder="Town/Area">
                 </div>
@@ -185,6 +202,14 @@
                 </div>
             </div>
             <div class="form-row"><label>Review</label><textarea id="edit-review"></textarea></div>
+            <div class="form-row">
+                <label>Tags</label>
+                <div class="tags-input-wrapper" id="edit-tags-wrapper">
+                    <div class="tags-chips" id="edit-tags-chips"></div>
+                    <input type="text" id="edit-tags-input" placeholder="Type a tag, press comma or Enter..." autocomplete="off">
+                </div>
+                <input type="hidden" id="edit-tags">
+            </div>
          
             <div class="form-row">
                 <label>Rating (0.0 - 10.0)</label>
