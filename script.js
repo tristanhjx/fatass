@@ -95,7 +95,8 @@ function syncWithFirebase() {
         reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
         reviews.forEach(r => autoMapToTier(r));
-        renderReviews();
+        populateFilterDropdowns();
+        filterAndRender();
         renderTierBoard();
         populateAuthorDropdowns();
     });
@@ -186,6 +187,7 @@ function renderReviews(filtered) {
             <div class="rating-val" style="color:${getTierColor(r.rating)}">
                 ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
+            ${r.date ? `<div class="review-timestamp">${formatReviewDate(r.date)}</div>` : ''}
             
             <div class="snippet">${r.text}</div>
             ${Array.isArray(r.tags) && r.tags.length ? `<div class="card-tags">${r.tags.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
@@ -663,21 +665,93 @@ function loadTagsIntoInput(tagsArray, chipsId, hiddenId) {
     (tagsArray || []).forEach(t => addTag(t, chipsId, hiddenId));
 }
 
-// --- Search Logic ---
-function filterAndRender() {
-    const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
-    const mode = document.getElementById('search-filter')?.value || 'name';
-    if (!query) { renderReviews(); return; }
-
-    const filtered = reviews.filter(r => {
-        if (mode === 'name') return r.name.toLowerCase().includes(query);
-        if (mode === 'tags') return Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(query));
-        return false;
-    });
-    renderReviews(filtered);
+// --- Date Formatting ---
+function formatReviewDate(isoString) {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+        ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
 }
 
-// Wire up search inputs
+// --- Filter Dropdowns Population ---
+function populateFilterDropdowns() {
+    const cuisines = [...new Set(reviews.map(r => r.cuisine).filter(Boolean))].sort();
+    const authors  = [...new Set(reviews.map(r => r.author).filter(Boolean))].sort();
+
+    // Extract towns from loc string "Town (Region)"
+    const towns = [...new Set(reviews.map(r => {
+        if (!r.loc) return null;
+        return r.loc.includes(' (') ? r.loc.split(' (')[0].trim() : null;
+    }).filter(Boolean))].sort();
+
+    const fillSelect = (id, values) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = el.value;
+        el.innerHTML = '<option value="">All</option>' + values.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (current && values.includes(current)) el.value = current;
+    };
+
+    fillSelect('filter-cuisine', cuisines);
+    fillSelect('filter-town', towns);
+    fillSelect('filter-author', authors);
+}
+
+// --- Search & Filter Logic ---
+function filterAndRender() {
+    const query   = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+    const mode    = document.getElementById('search-filter')?.value || 'name';
+    const cuisine = document.getElementById('filter-cuisine')?.value || '';
+    const region  = document.getElementById('filter-region')?.value || '';
+    const town    = document.getElementById('filter-town')?.value || '';
+    const author  = document.getElementById('filter-author')?.value || '';
+    const sort    = document.getElementById('filter-sort')?.value || 'date-desc';
+
+    let list = reviews.filter(r => {
+        // Search bar
+        if (query) {
+            if (mode === 'name' && !r.name.toLowerCase().includes(query)) return false;
+            if (mode === 'tags' && !(Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(query)))) return false;
+        }
+        // Filter dropdowns
+        if (cuisine && r.cuisine !== cuisine) return false;
+        if (region) {
+            const locRegion = r.loc && r.loc.includes('(') ? r.loc.split('(')[1]?.split(')')[0] : '';
+            if (locRegion !== region) return false;
+        }
+        if (town) {
+            const locTown = r.loc && r.loc.includes(' (') ? r.loc.split(' (')[0].trim() : '';
+            if (locTown !== town) return false;
+        }
+        if (author && r.author !== author) return false;
+        return true;
+    });
+
+    // Sort
+    list = [...list].sort((a, b) => {
+        if (sort === 'date-desc') return new Date(b.date) - new Date(a.date);
+        if (sort === 'date-asc')  return new Date(a.date) - new Date(b.date);
+        if (sort === 'rating-desc') return b.rating - a.rating;
+        if (sort === 'rating-asc')  return a.rating - b.rating;
+        return 0;
+    });
+
+    renderReviews(list);
+}
+
+function resetFilters() {
+    ['filter-cuisine','filter-region','filter-town','filter-author'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const sort = document.getElementById('filter-sort');
+    if (sort) sort.value = 'date-desc';
+    const search = document.getElementById('search-input');
+    if (search) search.value = '';
+    filterAndRender();
+}
+
+// Wire up inputs
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const searchFilter = document.getElementById('search-filter');
