@@ -95,7 +95,8 @@ function syncWithFirebase() {
         reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         tierData = {S:[], A:[], B:[], C:[], D:[], F:[]};
         reviews.forEach(r => autoMapToTier(r));
-        renderReviews();
+        populateFilterDropdowns();
+        filterAndRender();
         renderTierBoard();
         populateAuthorDropdowns();
     });
@@ -183,49 +184,10 @@ function renderReviews(filtered) {
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
             <div class="location">📍 ${displayLoc}</div>
-            <div class="ratings-block">
-                <div class="rating-row-item">
-                    <div class="rating-val" style="color:${getTierColor(r.rating)}">
-                        ${r.rating.toFixed(1)}
-                    </div>
-                    <span class="rating-author-label">by ${r.author}</span>
-                </div>
-                ${Array.isArray(r.extraRatings) && r.extraRatings.length ? r.extraRatings.map(er => `
-                <div class="rating-row-item extra-rating">
-                    <div class="rating-val rating-val-sm" style="color:${getTierColor(er.rating)}">
-                        ${parseFloat(er.rating).toFixed(1)}
-                    </div>
-                    <span class="rating-author-label">by ${er.author}</span>
-                    ${er.note ? `<span class="extra-rating-note">"${er.note}"</span>` : ''}
-                    <button class="extra-rating-delete" onclick="deleteExtraRating('${r.id}', '${er.author}', '${er.date}')" title="Remove">✕</button>
-                </div>`).join('') : ''}
-                ${Array.isArray(r.extraRatings) && r.extraRatings.length ? `
-                <div class="avg-rating-row">
-                    avg <span style="color:${getTierColor(((r.rating + r.extraRatings.reduce((s,e)=>s+parseFloat(e.rating),0))/(1+r.extraRatings.length)))}; font-weight:bold;">
-                        ${((r.rating + r.extraRatings.reduce((s,e)=>s+parseFloat(e.rating),0))/(1+r.extraRatings.length)).toFixed(1)}
-                    </span>
-                    <span class="avg-count">across ${1+r.extraRatings.length} scores</span>
-                </div>` : ''}
+            <div class="rating-val" style="color:${getTierColor(r.rating)}">
+                ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
             </div>
-            <button class="add-score-btn" onclick="toggleScoreForm('${r.id}')">+ add score</button>
-            <div class="add-score-form" id="score-form-${r.id}" style="display:none;">
-                <div class="score-form-row">
-                    <select class="score-author-select" id="score-author-${r.id}">
-                        <option value="" disabled selected>Your name...</option>
-                        ${[...new Set([...(reviews.map(rv=>rv.author).filter(Boolean))])].sort().map(a=>`<option value="${a}">${a}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="score-form-row score-slider-row">
-                    <input type="range" class="score-slider" id="score-slider-${r.id}" min="0" max="10" step="0.1" value="7.0"
-                        oninput="updateScoreDisplay('${r.id}', this.value)">
-                    <span class="score-display" id="score-display-${r.id}" style="color:${getTierColor(7.0)}">7.0</span>
-                </div>
-                <input type="text" class="score-note-input" id="score-note-${r.id}" placeholder="Quick note (optional)..." maxlength="120">
-                <div class="score-form-actions">
-                    <button class="btn btn-teal" style="font-size:10px;padding:5px 14px;" onclick="submitExtraRating('${r.id}')">Post</button>
-                    <button class="btn btn-ghost" style="font-size:10px;padding:5px 10px;" onclick="toggleScoreForm('${r.id}')">Cancel</button>
-                </div>
-            </div>
+            ${r.date ? `<div class="review-timestamp">${formatReviewDate(r.date)}</div>` : ''}
             
             <div class="snippet">${r.text}</div>
             ${Array.isArray(r.tags) && r.tags.length ? `<div class="card-tags">${r.tags.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
@@ -703,21 +665,93 @@ function loadTagsIntoInput(tagsArray, chipsId, hiddenId) {
     (tagsArray || []).forEach(t => addTag(t, chipsId, hiddenId));
 }
 
-// --- Search Logic ---
-function filterAndRender() {
-    const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
-    const mode = document.getElementById('search-filter')?.value || 'name';
-    if (!query) { renderReviews(); return; }
-
-    const filtered = reviews.filter(r => {
-        if (mode === 'name') return r.name.toLowerCase().includes(query);
-        if (mode === 'tags') return Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(query));
-        return false;
-    });
-    renderReviews(filtered);
+// --- Date Formatting ---
+function formatReviewDate(isoString) {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+        ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
 }
 
-// Wire up search inputs
+// --- Filter Dropdowns Population ---
+function populateFilterDropdowns() {
+    const cuisines = [...new Set(reviews.map(r => r.cuisine).filter(Boolean))].sort();
+    const authors  = [...new Set(reviews.map(r => r.author).filter(Boolean))].sort();
+
+    // Extract towns from loc string "Town (Region)"
+    const towns = [...new Set(reviews.map(r => {
+        if (!r.loc) return null;
+        return r.loc.includes(' (') ? r.loc.split(' (')[0].trim() : null;
+    }).filter(Boolean))].sort();
+
+    const fillSelect = (id, values) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = el.value;
+        el.innerHTML = '<option value="">All</option>' + values.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (current && values.includes(current)) el.value = current;
+    };
+
+    fillSelect('filter-cuisine', cuisines);
+    fillSelect('filter-town', towns);
+    fillSelect('filter-author', authors);
+}
+
+// --- Search & Filter Logic ---
+function filterAndRender() {
+    const query   = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+    const mode    = document.getElementById('search-filter')?.value || 'name';
+    const cuisine = document.getElementById('filter-cuisine')?.value || '';
+    const region  = document.getElementById('filter-region')?.value || '';
+    const town    = document.getElementById('filter-town')?.value || '';
+    const author  = document.getElementById('filter-author')?.value || '';
+    const sort    = document.getElementById('filter-sort')?.value || 'date-desc';
+
+    let list = reviews.filter(r => {
+        // Search bar
+        if (query) {
+            if (mode === 'name' && !r.name.toLowerCase().includes(query)) return false;
+            if (mode === 'tags' && !(Array.isArray(r.tags) && r.tags.some(t => t.toLowerCase().includes(query)))) return false;
+        }
+        // Filter dropdowns
+        if (cuisine && r.cuisine !== cuisine) return false;
+        if (region) {
+            const locRegion = r.loc && r.loc.includes('(') ? r.loc.split('(')[1]?.split(')')[0] : '';
+            if (locRegion !== region) return false;
+        }
+        if (town) {
+            const locTown = r.loc && r.loc.includes(' (') ? r.loc.split(' (')[0].trim() : '';
+            if (locTown !== town) return false;
+        }
+        if (author && r.author !== author) return false;
+        return true;
+    });
+
+    // Sort
+    list = [...list].sort((a, b) => {
+        if (sort === 'date-desc') return new Date(b.date) - new Date(a.date);
+        if (sort === 'date-asc')  return new Date(a.date) - new Date(b.date);
+        if (sort === 'rating-desc') return b.rating - a.rating;
+        if (sort === 'rating-asc')  return a.rating - b.rating;
+        return 0;
+    });
+
+    renderReviews(list);
+}
+
+function resetFilters() {
+    ['filter-cuisine','filter-region','filter-town','filter-author'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const sort = document.getElementById('filter-sort');
+    if (sort) sort.value = 'date-desc';
+    const search = document.getElementById('search-input');
+    if (search) search.value = '';
+    filterAndRender();
+}
+
+// Wire up inputs
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const searchFilter = document.getElementById('search-filter');
@@ -728,70 +762,3 @@ document.addEventListener('DOMContentLoaded', () => {
     initTagsInput('inp-tags-chips', 'inp-tags', 'inp-tags-input');
     initTagsInput('edit-tags-chips', 'edit-tags', 'edit-tags-input');
 });
-
-// --- Extra Ratings ---
-function toggleScoreForm(reviewId) {
-    const form = document.getElementById('score-form-' + reviewId);
-    if (!form) return;
-    const isHidden = form.style.display === 'none';
-    form.style.display = isHidden ? 'block' : 'none';
-    if (isHidden) {
-        const sel = document.getElementById('score-author-' + reviewId);
-        if (sel) {
-            const firebaseAuthors = reviews.map(r => r.author).filter(Boolean);
-            const saved = getSavedAuthors();
-            const all = [...new Set([...saved, ...firebaseAuthors])].sort();
-            const current = sel.value;
-            sel.innerHTML = '<option value="" disabled>Your name...</option>' + all.map(a => `<option value="${a}">${a}</option>`).join('');
-            if (current) sel.value = current;
-        }
-    }
-}
-
-function updateScoreDisplay(reviewId, value) {
-    const display = document.getElementById('score-display-' + reviewId);
-    const slider  = document.getElementById('score-slider-' + reviewId);
-    if (!display || !slider) return;
-    const v = parseFloat(value).toFixed(1);
-    const color = getDynamicColor(v);
-    display.textContent = v;
-    display.style.color = color;
-    slider.style.accentColor = color;
-}
-
-async function submitExtraRating(reviewId) {
-    const author = document.getElementById('score-author-' + reviewId)?.value;
-    const rating = parseFloat(document.getElementById('score-slider-' + reviewId)?.value || 7.0);
-    const note   = (document.getElementById('score-note-' + reviewId)?.value || '').trim();
-
-    if (!author) return showToast('Pick your name first!');
-
-    const review = reviews.find(r => r.id === reviewId);
-    if (!review) return;
-
-    const existing = Array.isArray(review.extraRatings) ? review.extraRatings : [];
-    if (review.author === author) return showToast('You already wrote this review!');
-    if (existing.some(e => e.author === author)) return showToast('You already scored this one!');
-
-    const newEntry = { author, rating: parseFloat(rating.toFixed(1)), note, date: new Date().toISOString() };
-    try {
-        await db.collection('reviews').doc(reviewId).update({ extraRatings: [...existing, newEntry] });
-        showToast('Score added!');
-    } catch(e) {
-        showToast('Failed to save score');
-        console.error(e);
-    }
-}
-
-async function deleteExtraRating(reviewId, entryAuthor, entryDate) {
-    const review = reviews.find(r => r.id === reviewId);
-    if (!review) return;
-    const existing = Array.isArray(review.extraRatings) ? review.extraRatings : [];
-    const updated = existing.filter(e => !(e.author === entryAuthor && e.date === entryDate));
-    try {
-        await db.collection('reviews').doc(reviewId).update({ extraRatings: updated });
-        showToast('Score removed');
-    } catch(e) {
-        showToast('Failed to remove score');
-    }
-}
