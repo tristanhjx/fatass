@@ -571,53 +571,97 @@ window.onload = () => {
 
 // --- Delete Review ---
 async function promptDeleteReview(id) {
-    if (confirm("Permanently delete this review from the cloud?")) {
-        try {
+    const r = reviews.find(x => x.id === id);
+    if (!r) return;
+
+    const reviewers = getCardReviewers(r);
+    const idx = cardReviewerIndex[id] || 0;
+    const slot = reviewers[idx];
+    const isSolo = reviewers.length === 1;
+
+    const confirmMsg = isSolo
+        ? `Delete ${slot.author}'s review of ${r.name}? This will remove the card entirely.`
+        : `Delete ${slot.author}'s review of ${r.name}?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        if (isSolo) {
+            // Only one reviewer left — delete the whole document
             await db.collection('reviews').doc(id).delete();
             showToast('Review deleted');
-        } catch (e) {
-            showToast('Delete failed');
+        } else if (idx === 0) {
+            // Deleting the primary reviewer — promote first appended to primary
+            const appended = Array.isArray(r.appendedReviews) ? [...r.appendedReviews] : [];
+            const newPrimary = appended.shift(); // remove first appended, it becomes primary
+            await db.collection('reviews').doc(id).update({
+                author: newPrimary.author,
+                rating: newPrimary.rating,
+                text: newPrimary.text,
+                dishes: newPrimary.dishes || [],
+                date: newPrimary.date,
+                appendedReviews: appended
+            });
+            cardReviewerIndex[id] = 0;
+            showToast('Review removed');
+        } else {
+            // Deleting an appended reviewer — splice it out
+            const appended = Array.isArray(r.appendedReviews) ? [...r.appendedReviews] : [];
+            const appendedIdx = idx - 1;
+            appended.splice(appendedIdx, 1);
+            await db.collection('reviews').doc(id).update({ appendedReviews: appended });
+            // Shift index back if we were at the last slot
+            cardReviewerIndex[id] = Math.max(0, idx - 1);
+            showToast('Review removed');
         }
+    } catch (e) {
+        showToast('Delete failed');
+        console.error(e);
     }
 }
 
 // --- Edit Functions ---
+// Tracks which reviewer slot the edit modal is targeting (0 = primary, 1+ = appended index)
+let currentEditReviewerIdx = 0;
+
 function openEditModal(id) {
     currentEditId = id;
     const r = reviews.find(review => review.id === id);
     if (!r) return;
 
+    // Determine which reviewer is currently displayed
+    currentEditReviewerIdx = cardReviewerIndex[id] || 0;
+    const reviewers = getCardReviewers(r);
+    const slot = reviewers[currentEditReviewerIdx];
+
+    // Shared fields always come from the top-level doc
     document.getElementById('edit-name').value = r.name || "";
     document.getElementById('edit-cuisine').value = r.cuisine || "";
-    document.getElementById('edit-review').value = r.text || "";
 
-    // Populate author dropdown from existing reviews + saved authors
+    // Reviewer-specific fields come from the active slot
+    document.getElementById('edit-review').value = slot.text || "";
+
     populateAuthorDropdowns('edit-author');
-    document.getElementById('edit-author').value = r.author || "";
+    document.getElementById('edit-author').value = slot.author || "";
 
     // Parse the stored location string back into parts for the modal
     const locString = r.loc || "";
     let town = "", region = "Central", link = "";
-
     if (locString.includes(' (')) {
         town = locString.split(' (')[0];
         const remainder = locString.split(' (')[1];
         region = remainder.split(')')[0];
-        if (remainder.includes(' — ')) {
-            link = remainder.split(' — ')[1];
-        }
+        if (remainder.includes(' — ')) link = remainder.split(' — ')[1];
     } else {
         town = locString;
     }
-
     document.getElementById('edit-town').value = town;
     document.getElementById('edit-region').value = region;
     document.getElementById('edit-link').value = link;
 
-    const rating = r.rating || 7.0;
+    const rating = slot.rating ?? 7.0;
     const editSlider = document.getElementById('edit-rating-slider');
     const editDisplay = document.getElementById('edit-rating-display');
-    
     if (editSlider && editDisplay) {
         editSlider.value = rating;
         editSlider.oninput = () => {
@@ -630,12 +674,14 @@ function openEditModal(id) {
         editSlider.oninput();
     }
 
+    // Images are shared (top-level doc)
     const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
-    window.tempEditImages = [...images]; 
+    window.tempEditImages = [...images];
     renderEditImages();
-    loadDishesIntoContainer('edit-dish-list', r.dishes || []);
+
+    loadDishesIntoContainer('edit-dish-list', slot.dishes || []);
     loadTagsIntoInput(r.tags || [], 'edit-tags-chips', 'edit-tags');
-    
+
     document.getElementById('editModal').classList.add('show');
 }
 
@@ -671,8 +717,6 @@ async function saveEdit() {
     const region = document.getElementById('edit-region').value;
     const town = document.getElementById('edit-town').value.trim();
     const link = document.getElementById('edit-link').value.trim();
-
-    // Combine manual fields into the loc string
     const loc = `${town} (${region})${link ? ' — ' + link : ''}`;
 
     const fileInput = document.getElementById('edit-img-input');
@@ -687,23 +731,49 @@ async function saveEdit() {
             }
         }
 
-        const update = {
+        // Shared fields always update the top-level doc
+        const sharedUpdate = {
             name: document.getElementById('edit-name').value.trim(),
-            loc: loc,
+            loc,
             cuisine: document.getElementById('edit-cuisine').value.trim(),
-            author: document.getElementById('edit-author').value,
-            text: document.getElementById('edit-review').value.trim(),
-            rating: parseFloat(document.getElementById('edit-rating-slider').value),
-            dishes: getDishesFromContainer('edit-dish-list'),
             img: [...(window.tempEditImages || []), ...uploadedImages],
             tags: (document.getElementById('edit-tags').value || '').split(',').map(t=>t.trim()).filter(Boolean)
         };
 
-        await db.collection('reviews').doc(currentEditId).update(update);
+        // Reviewer-specific fields go to the right slot
+        const reviewerSpecific = {
+            author: document.getElementById('edit-author').value,
+            text: document.getElementById('edit-review').value.trim(),
+            rating: parseFloat(document.getElementById('edit-rating-slider').value),
+            dishes: getDishesFromContainer('edit-dish-list'),
+        };
+
+        const r = reviews.find(rv => rv.id === currentEditId);
+
+        if (currentEditReviewerIdx === 0) {
+            // Primary reviewer — write directly to top-level doc fields
+            await db.collection('reviews').doc(currentEditId).update({
+                ...sharedUpdate,
+                ...reviewerSpecific
+            });
+        } else {
+            // Appended reviewer — splice the updated entry into appendedReviews
+            const appended = Array.isArray(r.appendedReviews) ? [...r.appendedReviews] : [];
+            const appendedIdx = currentEditReviewerIdx - 1;
+            if (appended[appendedIdx]) {
+                appended[appendedIdx] = { ...appended[appendedIdx], ...reviewerSpecific };
+            }
+            await db.collection('reviews').doc(currentEditId).update({
+                ...sharedUpdate,
+                appendedReviews: appended
+            });
+        }
+
         showToast('Updated successfully');
         closeEditModal();
     } catch (e) {
         showToast('Update failed');
+        console.error(e);
     }
 }
 
