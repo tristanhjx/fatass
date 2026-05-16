@@ -193,12 +193,6 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     transition: all 0.2s;
 }
 .edit-icon:hover { border-color: #f1c40f; color: #f1c40f; }
-.delete-btn {
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
-}
-.delete-btn:hover { border-color: #c84a4a; color: #c84a4a; }
 
 /* Multi-image display in cards */
 .image-gallery {
@@ -339,6 +333,84 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     position: relative;
     top: -2px;
 }
+
+/* Multi-reviewer nav */
+.reviewer-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 4px;
+}
+.reviewer-arrow {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 2px 8px;
+    cursor: pointer;
+    line-height: 1.4;
+    transition: all 0.15s;
+}
+.reviewer-arrow:hover:not(:disabled) {
+    border-color: var(--teal);
+    color: var(--teal);
+}
+.reviewer-arrow:disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+.reviewer-nav-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+}
+
+/* Average badge */
+.avg-badge {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+.avg-badge span:first-child {
+    font-size: 14px;
+    font-weight: bold;
+}
+.avg-reviewers {
+    font-size: 10px;
+    color: var(--muted);
+}
+
+/* Card footer actions */
+.card-footer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+.append-btn {
+    font-size: 10px !important;
+    padding: 5px 12px !important;
+    letter-spacing: 1px;
+}
+.delete-btn-inline {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.delete-btn-inline:hover { border-color: #c84a4a; color: #c84a4a; }
 
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--teal);color:#fff;font-family:var(--font);font-size:12px;letter-spacing:1px;padding:.75rem 1.5rem;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:999;}
 .toast.show{opacity:1;transform:translateY(0);}
