@@ -75,7 +75,8 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 .page{display:none;padding:2rem;max-width:1100px;margin:0 auto;}
 .page.active{display:block;}
 #page-home{display:none;max-width:900px;margin:0 auto;padding:0;}
-#page-home.active{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 52px);}
+#page-home.active{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 52px);gap:3rem;padding:2rem 0;}
+.home-main{display:flex;flex-direction:column;align-items:center;margin-top:-6rem;}
 .home-logo{text-align:center;margin-bottom:3rem;}
 .home-logo h1{font-size:64px;letter-spacing:3px;text-transform:uppercase;color:var(--orange);line-height:1;}
 .home-logo h1 .a{color:var(--teal);}
@@ -85,6 +86,22 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
 .home-nav-btn:hover{border-color:var(--orange);color:var(--orange);}
 .home-nav-btn .arrow{float:right;color:var(--muted);}
 .home-nav-btn:hover .arrow{color:var(--orange);}
+
+/* Changelog */
+.home-changelog{width:260px;}
+.changelog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
+.changelog-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);}
+.changelog-add-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:10px;letter-spacing:1px;padding:3px 8px;cursor:pointer;text-transform:uppercase;transition:all .15s;}
+.changelog-add-btn:hover{border-color:var(--teal);color:var(--teal);}
+.changelog-list{display:flex;flex-direction:column;gap:4px;}
+.changelog-entry{display:flex;align-items:flex-start;gap:6px;group:true;}
+.changelog-bullet{color:var(--orange);font-size:12px;line-height:1.6;flex-shrink:0;user-select:none;}
+.changelog-text{flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--font);font-size:12px;line-height:1.6;outline:none;resize:none;padding:0;min-height:1.6em;transition:border-color .15s;overflow:hidden;}
+.changelog-text:focus{border-bottom-color:var(--border);}
+.changelog-text::placeholder{color:var(--muted);}
+.changelog-delete{background:none;border:none;color:transparent;font-size:12px;cursor:pointer;padding:0 2px;line-height:1.6;transition:color .15s;flex-shrink:0;}
+.changelog-entry:hover .changelog-delete{color:var(--muted);}
+.changelog-delete:hover{color:#c84a4a !important;}
 
 /* Hero & Section Titles */
 .section-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.75rem;}
