@@ -301,6 +301,41 @@
 
     <script src="script.js"></script>
 
+    <!-- Append Review Modal -->
+    <div class="modal-bg" id="appendModal">
+        <div class="modal" style="width: 500px; max-width: 95vw;">
+            <h3>Add Your Review</h3>
+            <p id="appendModalSubtitle" style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:1.25rem;"></p>
+            <div class="form-row">
+                <label>Your name</label>
+                <div class="author-row">
+                    <select id="append-author"><option value="" disabled selected>Select name...</option></select>
+                    <button type="button" class="author-add-btn" onclick="promptAddAuthor('append-author')" title="Add new name">+</button>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>Rating (0.0 - 10.0)</label>
+                <div class="slider-container">
+                    <input type="range" id="append-rating-slider" min="0" max="10" step="0.1" value="7.0">
+                    <span id="append-rating-display">7.0</span>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>Review</label>
+                <textarea id="append-review" placeholder="Your take on this place..."></textarea>
+            </div>
+            <div class="form-row">
+                <label>Dish Ratings</label>
+                <div id="append-dish-list"></div>
+                <button type="button" class="btn btn-ghost dish-add-btn" onclick="addDishRow('append-dish-list')">+ add dish</button>
+            </div>
+            <div class="modal-btns" style="margin-top:1.5rem;">
+                <button class="btn" onclick="saveAppendedReview()">Post Review</button>
+                <button class="btn btn-ghost" onclick="closeAppendModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-bg" id="imageViewerModal" onclick="closeImageViewer()">
         <div class="image-viewer-content">
             <img id="fullSizeImage" src="" alt="Full size review">
