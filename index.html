@@ -19,15 +19,24 @@
     </nav>
 
     <div id="page-home" class="page active">
-        <div class="home-logo">
-            <h1>F<span class="a">A</span>T<span class="a">A</span>SS</h1>
-            <p>// your crew's food diary //</p>
+        <div class="home-main">
+            <div class="home-logo">
+                <h1>F<span class="a">A</span>T<span class="a">A</span>SS</h1>
+                <p>// your crew's food diary //</p>
+            </div>
+            <div class="home-btns">
+                <button class="home-nav-btn" onclick="showPage('reviews')">Reviews <span class="arrow">→</span></button>
+                <button class="home-nav-btn" onclick="showPage('spin')">Spin the Wheel <span class="arrow">→</span></button>
+                <button class="home-nav-btn" onclick="showPage('tier')">Tier List <span class="arrow">→</span></button>
+                <button class="home-nav-btn" onclick="showPage('add')">+ Add Review <span class="arrow">→</span></button>
+            </div>
         </div>
-        <div class="home-btns">
-            <button class="home-nav-btn" onclick="showPage('reviews')">Reviews <span class="arrow">→</span></button>
-            <button class="home-nav-btn" onclick="showPage('spin')">Spin the Wheel <span class="arrow">→</span></button>
-            <button class="home-nav-btn" onclick="showPage('tier')">Tier List <span class="arrow">→</span></button>
-            <button class="home-nav-btn" onclick="showPage('add')">+ Add Review <span class="arrow">→</span></button>
+        <div class="home-changelog">
+            <div class="changelog-header">
+                <span class="changelog-title">// changelog</span>
+                <button class="changelog-add-btn" onclick="addChangelogEntry()">+ entry</button>
+            </div>
+            <div class="changelog-list" id="changelogList"></div>
         </div>
     </div>
 
