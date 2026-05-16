@@ -33,6 +33,48 @@
 
     <div id="page-reviews" class="page">
         <div class="page-hero"><h2>Reviews</h2><p>// what the crew has been eating //</p></div>
+        <div class="filter-row">
+            <div class="filter-group">
+                <label class="filter-label">Cuisine</label>
+                <select id="filter-cuisine" class="filter-select" onchange="filterAndRender()">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Region</label>
+                <select id="filter-region" class="filter-select" onchange="filterAndRender()">
+                    <option value="">All</option>
+                    <option value="Central">Central</option>
+                    <option value="North">North</option>
+                    <option value="North-East">North-East</option>
+                    <option value="East">East</option>
+                    <option value="West">West</option>
+                    <option value="South">South</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Town</label>
+                <select id="filter-town" class="filter-select" onchange="filterAndRender()">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Reviewer</label>
+                <select id="filter-author" class="filter-select" onchange="filterAndRender()">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Sort by</label>
+                <select id="filter-sort" class="filter-select" onchange="filterAndRender()">
+                    <option value="date-desc">Newest first</option>
+                    <option value="date-asc">Oldest first</option>
+                    <option value="rating-desc">Rating ↓</option>
+                    <option value="rating-asc">Rating ↑</option>
+                </select>
+            </div>
+            <button class="filter-reset-btn" onclick="resetFilters()">Reset</button>
+        </div>
         <div class="search-bar-row">
             <select id="search-filter" class="search-filter-select">
                 <option value="name">Restaurant Name</option>
