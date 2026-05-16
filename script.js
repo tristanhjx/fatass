@@ -156,6 +156,22 @@ async function submitReview() {
     }
 }
 
+// Track which reviewer index is active per card (by review id)
+const cardReviewerIndex = {};
+
+function getCardReviewers(r) {
+    // Returns array of reviewer objects: [{author, rating, text, dishes, date}, ...]
+    const primary = { author: r.author, rating: r.rating, text: r.text, dishes: r.dishes || [], date: r.date };
+    const appended = Array.isArray(r.appendedReviews) ? r.appendedReviews : [];
+    return [primary, ...appended];
+}
+
+function getAverageRating(r) {
+    const reviewers = getCardReviewers(r);
+    const avg = reviewers.reduce((sum, rv) => sum + parseFloat(rv.rating), 0) / reviewers.length;
+    return avg;
+}
+
 function renderReviews(filtered) {
     const grid = document.getElementById('restGrid');
     if (!grid) return;
@@ -166,7 +182,15 @@ function renderReviews(filtered) {
     }
     grid.innerHTML = list.map(r => {
         const images = Array.isArray(r.img) ? r.img : (r.img ? [r.img] : []);
+        const reviewers = getCardReviewers(r);
+        const multiReviewer = reviewers.length > 1;
+        const avgRating = getAverageRating(r);
         
+        // Init index if not set
+        if (cardReviewerIndex[r.id] === undefined) cardReviewerIndex[r.id] = 0;
+        const idx = cardReviewerIndex[r.id];
+        const current = reviewers[idx];
+
         // Handle Map Link
         let displayLoc = r.loc || "";
         if (displayLoc.includes(' — ')) {
@@ -176,25 +200,37 @@ function renderReviews(filtered) {
             displayLoc = `${textPart} • <a href="${urlPart}" target="_blank" style="color:var(--teal); text-decoration:underline;">Map</a>`;
         }
 
+        const avgBadge = multiReviewer 
+            ? `<div class="avg-badge">avg <span style="color:${getTierColor(avgRating)}">${avgRating.toFixed(1)}</span> <span class="avg-reviewers">· ${reviewers.length} reviewers</span></div>`
+            : '';
+
+        const reviewerNav = multiReviewer ? `
+            <div class="reviewer-nav">
+                <button class="reviewer-arrow" onclick="shiftReviewer('${r.id}', -1)" ${idx === 0 ? 'disabled' : ''}>←</button>
+                <span class="reviewer-nav-label">${idx + 1} / ${reviewers.length}</span>
+                <button class="reviewer-arrow" onclick="shiftReviewer('${r.id}', 1)" ${idx === reviewers.length - 1 ? 'disabled' : ''}>→</button>
+            </div>` : '';
+
         return `
-        <div class="rest-card">
+        <div class="rest-card" id="card-${r.id}">
             <div class="card-actions">
                 <button class="action-icon edit-icon" onclick="openEditModal('${r.id}')">✏️</button>
             </div>
             <div class="tag">${r.cuisine}</div>
             <h3>${r.name}</h3>
             <div class="location">📍 ${displayLoc}</div>
-            <div class="rating-val" style="color:${getTierColor(r.rating)}">
-                ${r.rating.toFixed(1)} <span class="review-count">by ${r.author}</span>
+            ${avgBadge}
+            <div class="rating-val" style="color:${getTierColor(current.rating)}">
+                ${parseFloat(current.rating).toFixed(1)} <span class="review-count">by ${current.author}</span>
             </div>
-            ${r.date ? `<div class="review-timestamp">${formatReviewDate(r.date)}</div>` : ''}
-            
-            <div class="snippet">${r.text}</div>
+            ${current.date ? `<div class="review-timestamp">${formatReviewDate(current.date)}</div>` : ''}
+            ${reviewerNav}
+            <div class="snippet">${current.text}</div>
             ${Array.isArray(r.tags) && r.tags.length ? `<div class="card-tags">${r.tags.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
             
-            ${Array.isArray(r.dishes) && r.dishes.length ? `
+            ${Array.isArray(current.dishes) && current.dishes.length ? `
             <div class="dish-ratings">
-                ${r.dishes.map(d => `
+                ${current.dishes.map(d => `
                 <div class="dish-rating-row">
                     <span class="dish-rating-name">${d.name}</span>
                     <span class="dish-rating-dots"></span>
@@ -210,14 +246,97 @@ function renderReviews(filtered) {
                 `).join('')}
             </div>
             
-            <button class="action-icon delete-btn" onclick="promptDeleteReview('${r.id}')">🗑️</button>
+            <div class="card-footer-actions">
+                <button class="btn btn-ghost append-btn" onclick="openAppendModal('${r.id}')">+ Add Your Review</button>
+                <button class="action-icon delete-btn-inline" onclick="promptDeleteReview('${r.id}')">🗑️</button>
+            </div>
         </div>`;
     }).join('');
+}
+
+function shiftReviewer(id, delta) {
+    const r = reviews.find(x => x.id === id);
+    if (!r) return;
+    const reviewers = getCardReviewers(r);
+    const current = (cardReviewerIndex[id] || 0) + delta;
+    cardReviewerIndex[id] = Math.max(0, Math.min(reviewers.length - 1, current));
+    // Re-render only the affected list
+    filterAndRender();
+}
+
+// --- Append Review Logic ---
+let currentAppendId = null;
+
+function openAppendModal(id) {
+    currentAppendId = id;
+    const r = reviews.find(x => x.id === id);
+    if (!r) return;
+
+    document.getElementById('appendModalSubtitle').textContent = `// ${r.name} · ${r.cuisine}`;
+
+    populateAuthorDropdowns('append-author');
+    document.getElementById('append-author').value = '';
+
+    const slider = document.getElementById('append-rating-slider');
+    const display = document.getElementById('append-rating-display');
+    slider.value = 7.0;
+    display.textContent = '7.0';
+    display.style.color = getDynamicColor(7.0);
+    slider.style.accentColor = getDynamicColor(7.0);
+    slider.oninput = () => {
+        const v = parseFloat(slider.value).toFixed(1);
+        display.textContent = v;
+        display.style.color = getDynamicColor(v);
+        slider.style.accentColor = getDynamicColor(v);
+    };
+
+    document.getElementById('append-review').value = '';
+    document.getElementById('append-dish-list').innerHTML = '';
+
+    document.getElementById('appendModal').classList.add('show');
+}
+
+function closeAppendModal() {
+    document.getElementById('appendModal').classList.remove('show');
+    currentAppendId = null;
+}
+
+async function saveAppendedReview() {
+    if (!currentAppendId) return;
+    const author = document.getElementById('append-author').value;
+    const rating = parseFloat(document.getElementById('append-rating-slider').value);
+    const text = document.getElementById('append-review').value.trim();
+    const dishes = getDishesFromContainer('append-dish-list');
+
+    if (!author) return showToast('Please select your name!');
+
+    const r = reviews.find(x => x.id === currentAppendId);
+    if (!r) return;
+
+    // Check if this author already reviewed
+    const existing = getCardReviewers(r);
+    if (existing.some(rv => rv.author === author)) {
+        return showToast(`${author} already reviewed this!`);
+    }
+
+    const newEntry = { author, rating, text, dishes, date: new Date().toISOString() };
+    const appended = Array.isArray(r.appendedReviews) ? [...r.appendedReviews, newEntry] : [newEntry];
+
+    try {
+        await db.collection('reviews').doc(currentAppendId).update({ appendedReviews: appended });
+        // Jump to the new reviewer's slot after save
+        cardReviewerIndex[currentAppendId] = appended.length; // primary + appended index
+        showToast('Review added!');
+        closeAppendModal();
+    } catch (e) {
+        showToast('Failed to save.');
+        console.error(e);
+    }
 }
 // --- 6. Tier List Logic ---
 function autoMapToTier(review) {
     let tier = 'F';
-    const v = review.rating;
+    const v = getAverageRating(review);
     if (v >= 9.0) tier = 'S';
     else if (v >= 8.0) tier = 'A';
     else if (v >= 7.0) tier = 'B';
@@ -731,8 +850,8 @@ function filterAndRender() {
     list = [...list].sort((a, b) => {
         if (sort === 'date-desc') return new Date(b.date) - new Date(a.date);
         if (sort === 'date-asc')  return new Date(a.date) - new Date(b.date);
-        if (sort === 'rating-desc') return b.rating - a.rating;
-        if (sort === 'rating-asc')  return a.rating - b.rating;
+        if (sort === 'rating-desc') return getAverageRating(b) - getAverageRating(a);
+        if (sort === 'rating-asc')  return getAverageRating(a) - getAverageRating(b);
         return 0;
     });
 
