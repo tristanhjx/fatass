@@ -563,10 +563,78 @@ function showToast(m) {
     setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+// --- Changelog Logic ---
+const CHANGELOG_KEY = 'fatass_changelog_v1';
+
+function loadChangelog() {
+    try { return JSON.parse(localStorage.getItem(CHANGELOG_KEY)) || []; } catch(e) { return []; }
+}
+
+function saveChangelog(entries) {
+    localStorage.setItem(CHANGELOG_KEY, JSON.stringify(entries));
+}
+
+function renderChangelog() {
+    const list = document.getElementById('changelogList');
+    if (!list) return;
+    const entries = loadChangelog();
+    list.innerHTML = '';
+    entries.forEach((text, i) => {
+        const row = document.createElement('div');
+        row.className = 'changelog-entry';
+        row.innerHTML = `
+            <span class="changelog-bullet">—</span>
+            <textarea class="changelog-text" rows="1" placeholder="what changed...">${text}</textarea>
+            <button class="changelog-delete" onclick="deleteChangelogEntry(${i})" title="delete">✕</button>
+        `;
+        const ta = row.querySelector('textarea');
+        // Auto-resize
+        const resize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+        ta.addEventListener('input', () => { resize(); updateChangelogEntry(i, ta.value); });
+        ta.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addChangelogEntry(i + 1); // insert after current
+            }
+        });
+        setTimeout(resize, 0);
+        list.appendChild(row);
+    });
+}
+
+function addChangelogEntry(atIndex) {
+    const entries = loadChangelog();
+    if (atIndex !== undefined) {
+        entries.splice(atIndex, 0, '');
+    } else {
+        entries.push('');
+    }
+    saveChangelog(entries);
+    renderChangelog();
+    // Focus the new entry
+    const rows = document.querySelectorAll('.changelog-text');
+    const idx = atIndex !== undefined ? atIndex : entries.length - 1;
+    if (rows[idx]) rows[idx].focus();
+}
+
+function updateChangelogEntry(index, value) {
+    const entries = loadChangelog();
+    entries[index] = value;
+    saveChangelog(entries);
+}
+
+function deleteChangelogEntry(index) {
+    const entries = loadChangelog();
+    entries.splice(index, 1);
+    saveChangelog(entries);
+    renderChangelog();
+}
+
 // --- 9. Global Init ---
 window.onload = () => {
     syncWithFirebase();
     renderWheel();
+    renderChangelog();
 };
 
 // --- Delete Review ---
