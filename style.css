@@ -452,3 +452,65 @@ nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;d
     color: var(--teal);
     text-transform: uppercase;
 }
+
+/* Filter Row */
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 110px;
+}
+.filter-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.filter-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 11px;
+    padding: 6px 8px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    width: 100%;
+}
+.filter-select:focus { border-color: var(--teal); }
+.filter-reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    cursor: pointer;
+    align-self: flex-end;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.filter-reset-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+/* Review Timestamp */
+.review-timestamp {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    margin-top: -2px;
+}
